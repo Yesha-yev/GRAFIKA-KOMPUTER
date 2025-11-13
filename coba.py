@@ -9,8 +9,8 @@ import json
 pygame.init()
 
 # Konstanta
-SCREEN_WIDTH = 1200
-SCREEN_HEIGHT = 800
+SCREEN_WIDTH = 1400
+SCREEN_HEIGHT = 900
 FPS = 60
 
 # Warna
@@ -30,6 +30,9 @@ HAIR_COLOR = (50, 30, 20)
 CLOTHES_COLOR = (0, 100, 200)
 PANTS_COLOR = (30, 30, 150)
 SHOES_COLOR = (20, 20, 20)
+GRASS_GREEN = (34, 139, 34)
+SIDEWALK_COLOR = (192, 192, 192)
+BUILDING_COLORS = [(200, 200, 220), (180, 180, 200), (210, 210, 230), (190, 190, 210)]
 
 # Enum untuk arah
 class Direction(Enum):
@@ -62,8 +65,8 @@ class Player:
     def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.width = 30
-        self.height = 60
+        self.width = 20  # Diperkecil dari 30
+        self.height = 40  # Diperkecil dari 60
         self.speed = 5
         self.direction = Direction.DOWN
         self.animation_counter = 0
@@ -116,88 +119,88 @@ class Player:
             self.animation_counter = 0
             
         # Gambar kaki dengan animasi
-        leg_offset = 8
+        leg_offset = 5  # Diperkecil dari 8
         leg_y = self.y + self.height//2
         
         if self.is_moving:
             # Animasi kaki bergerak
-            left_leg_x = self.x - leg_offset + math.sin(self.animation_counter) * 8
-            right_leg_x = self.x + leg_offset - math.sin(self.animation_counter) * 8
+            left_leg_x = self.x - leg_offset + math.sin(self.animation_counter) * 5  # Diperkecil dari 8
+            right_leg_x = self.x + leg_offset - math.sin(self.animation_counter) * 5  # Diperkecil dari 8
         else:
             left_leg_x = self.x - leg_offset
             right_leg_x = self.x + leg_offset
             
         # Gambar celana
         pygame.draw.rect(screen, PANTS_COLOR, (self.x - self.width//2, self.y - self.height//4, 
-                                              self.width, self.height//2 + 10))
+                                              self.width, self.height//2 + 5))  # Diperkecil
         
         # Gambar kaki
-        pygame.draw.rect(screen, PANTS_COLOR, (left_leg_x - 5, leg_y, 10, 20))
-        pygame.draw.rect(screen, PANTS_COLOR, (right_leg_x - 5, leg_y, 10, 20))
+        pygame.draw.rect(screen, PANTS_COLOR, (left_leg_x - 4, leg_y, 8, 15))  # Diperkecil
+        pygame.draw.rect(screen, PANTS_COLOR, (right_leg_x - 4, leg_y, 8, 15))  # Diperkecil
         
         # Gambar sepatu
-        pygame.draw.ellipse(screen, SHOES_COLOR, (left_leg_x - 7, leg_y + 18, 14, 10))
-        pygame.draw.ellipse(screen, SHOES_COLOR, (right_leg_x - 7, leg_y + 18, 14, 10))
+        pygame.draw.ellipse(screen, SHOES_COLOR, (left_leg_x - 5, leg_y + 13, 10, 8))  # Diperkecil
+        pygame.draw.ellipse(screen, SHOES_COLOR, (right_leg_x - 5, leg_y + 13, 10, 8))  # Diperkecil
         
         # Gambar tubuh (baju)
         body_rect = pygame.Rect(self.x - self.width//2, self.y - self.height//2, 
                                self.width, self.height//2)
-        pygame.draw.rect(screen, CLOTHES_COLOR, body_rect, border_radius=5)
+        pygame.draw.rect(screen, CLOTHES_COLOR, body_rect, border_radius=3)  # Diperkecil
         
         # Gambar kepala
-        head_radius = 15
+        head_radius = 10  # Diperkecil dari 15
         head_pos = (self.x, self.y - self.height//2 - head_radius)
         pygame.draw.circle(screen, SKIN_COLOR, head_pos, head_radius)
         
         # Gambar rambut
         if self.direction == Direction.RIGHT:
             hair_points = [
-                (head_pos[0] - head_radius + 2, head_pos[1] - head_radius + 5),
-                (head_pos[0] + head_radius - 2, head_pos[1] - head_radius + 5),
-                (head_pos[0] + head_radius - 5, head_pos[1] - 2),
-                (head_pos[0] - head_radius + 5, head_pos[1] - 2)
+                (head_pos[0] - head_radius + 2, head_pos[1] - head_radius + 3),
+                (head_pos[0] + head_radius - 2, head_pos[1] - head_radius + 3),
+                (head_pos[0] + head_radius - 3, head_pos[1] - 1),
+                (head_pos[0] - head_radius + 3, head_pos[1] - 1)
             ]
         elif self.direction == Direction.LEFT:
             hair_points = [
-                (head_pos[0] - head_radius + 2, head_pos[1] - head_radius + 5),
-                (head_pos[0] + head_radius - 2, head_pos[1] - head_radius + 5),
-                (head_pos[0] + head_radius - 5, head_pos[1] - 2),
-                (head_pos[0] - head_radius + 5, head_pos[1] - 2)
+                (head_pos[0] - head_radius + 2, head_pos[1] - head_radius + 3),
+                (head_pos[0] + head_radius - 2, head_pos[1] - head_radius + 3),
+                (head_pos[0] + head_radius - 3, head_pos[1] - 1),
+                (head_pos[0] - head_radius + 3, head_pos[1] - 1)
             ]
         else:
             hair_points = [
-                (head_pos[0] - head_radius + 2, head_pos[1] - head_radius + 5),
-                (head_pos[0] + head_radius - 2, head_pos[1] - head_radius + 5),
-                (head_pos[0] + head_radius - 5, head_pos[1] - 2),
-                (head_pos[0] - head_radius + 5, head_pos[1] - 2)
+                (head_pos[0] - head_radius + 2, head_pos[1] - head_radius + 3),
+                (head_pos[0] + head_radius - 2, head_pos[1] - head_radius + 3),
+                (head_pos[0] + head_radius - 3, head_pos[1] - 1),
+                (head_pos[0] - head_radius + 3, head_pos[1] - 1)
             ]
         pygame.draw.polygon(screen, HAIR_COLOR, hair_points)
         
         # Gambar mata
-        eye_offset_x = 5
-        eye_offset_y = -3
+        eye_offset_x = 3  # Diperkecil dari 5
+        eye_offset_y = -2  # Diperkecil dari -3
         if self.direction == Direction.RIGHT:
             left_eye = (head_pos[0] + eye_offset_x, head_pos[1] + eye_offset_y)
-            right_eye = (head_pos[0] + eye_offset_x + 3, head_pos[1] + eye_offset_y)
+            right_eye = (head_pos[0] + eye_offset_x + 2, head_pos[1] + eye_offset_y)  # Diperkecil
         elif self.direction == Direction.LEFT:
-            left_eye = (head_pos[0] - eye_offset_x - 3, head_pos[1] + eye_offset_y)
+            left_eye = (head_pos[0] - eye_offset_x - 2, head_pos[1] + eye_offset_y)  # Diperkecil
             right_eye = (head_pos[0] - eye_offset_x, head_pos[1] + eye_offset_y)
         else:
             left_eye = (head_pos[0] - eye_offset_x, head_pos[1] + eye_offset_y)
             right_eye = (head_pos[0] + eye_offset_x, head_pos[1] + eye_offset_y)
             
-        pygame.draw.circle(screen, BLACK, left_eye, 2)
-        pygame.draw.circle(screen, BLACK, right_eye, 2)
+        pygame.draw.circle(screen, BLACK, left_eye, 1.5)  # Diperkecil
+        pygame.draw.circle(screen, BLACK, right_eye, 1.5)  # Diperkecil
         
         # Gambar mulut senyum
         if self.direction == Direction.RIGHT or self.direction == Direction.LEFT:
-            smile_rect = pygame.Rect(head_pos[0] - 5, head_pos[1] + 5, 10, 5)
+            smile_rect = pygame.Rect(head_pos[0] - 3, head_pos[1] + 3, 6, 3)  # Diperkecil
         else:
-            smile_rect = pygame.Rect(head_pos[0] - 5, head_pos[1] + 5, 10, 5)
+            smile_rect = pygame.Rect(head_pos[0] - 3, head_pos[1] + 3, 6, 3)  # Diperkecil
         pygame.draw.arc(screen, BLACK, smile_rect, 0, math.pi, 1)
         
         # Gambar tangan
-        hand_offset = 12
+        hand_offset = 8  # Diperkecil dari 12
         hand_y = self.y - self.height//4
         
         if self.direction == Direction.RIGHT:
@@ -210,31 +213,31 @@ class Player:
             left_hand = (self.x - self.width//2 - hand_offset, hand_y)
             right_hand = (self.x + self.width//2 + hand_offset, hand_y)
             
-        pygame.draw.circle(screen, SKIN_COLOR, left_hand, 7)
-        pygame.draw.circle(screen, SKIN_COLOR, right_hand, 7)
+        pygame.draw.circle(screen, SKIN_COLOR, left_hand, 5)  # Diperkecil
+        pygame.draw.circle(screen, SKIN_COLOR, right_hand, 5)  # Diperkecil
         
         # Gambar lengan
         if self.direction == Direction.RIGHT:
             pygame.draw.line(screen, CLOTHES_COLOR, 
                             (self.x - self.width//2, self.y - self.height//4), 
-                            left_hand, 5)
+                            left_hand, 3)  # Diperkecil
             pygame.draw.line(screen, CLOTHES_COLOR, 
                             (self.x + self.width//2, self.y - self.height//4), 
-                            right_hand, 5)
+                            right_hand, 3)  # Diperkecil
         elif self.direction == Direction.LEFT:
             pygame.draw.line(screen, CLOTHES_COLOR, 
                             (self.x - self.width//2, self.y - self.height//4), 
-                            left_hand, 5)
+                            left_hand, 3)  # Diperkecil
             pygame.draw.line(screen, CLOTHES_COLOR, 
                             (self.x + self.width//2, self.y - self.height//4), 
-                            right_hand, 5)
+                            right_hand, 3)  # Diperkecil
         else:
             pygame.draw.line(screen, CLOTHES_COLOR, 
                             (self.x - self.width//2, self.y - self.height//4), 
-                            left_hand, 5)
+                            left_hand, 3)  # Diperkecil
             pygame.draw.line(screen, CLOTHES_COLOR, 
                             (self.x + self.width//2, self.y - self.height//4), 
-                            right_hand, 5)
+                            right_hand, 3)  # Diperkecil
 
 # Kelas untuk kendaraan
 class Vehicle:
@@ -247,16 +250,41 @@ class Vehicle:
         self.color = color
         self.speed = speed
         self.vehicle_type = vehicle_type
+        # Tentukan jalur kendaraan berdasarkan arah
+        if direction == Direction.RIGHT or direction == Direction.LEFT:
+            self.road_y = y  # Posisi y jalan
+            self.road_min_y = y - 20  # Batas atas jalan
+            self.road_max_y = y + 20  # Batas bawah jalan
+        else:  # UP atau DOWN
+            self.road_x = x  # Posisi x jalan
+            self.road_min_x = x - 20  # Batas kiri jalan
+            self.road_max_x = x + 20  # Batas kanan jalan
         
     def update(self):
         if self.direction == Direction.RIGHT:
             self.x += self.speed
             if self.x > SCREEN_WIDTH:
                 self.x = -self.width
+            # Pastikan kendaraan tetap di jalurnya
+            self.y = self.road_y
         elif self.direction == Direction.LEFT:
             self.x -= self.speed
             if self.x < -self.width:
                 self.x = SCREEN_WIDTH
+            # Pastikan kendaraan tetap di jalurnya
+            self.y = self.road_y
+        elif self.direction == Direction.DOWN:
+            self.y += self.speed
+            if self.y > SCREEN_HEIGHT:
+                self.y = -self.height
+            # Pastikan kendaraan tetap di jalurnya
+            self.x = self.road_x
+        elif self.direction == Direction.UP:
+            self.y -= self.speed
+            if self.y < -self.height:
+                self.y = SCREEN_HEIGHT
+            # Pastikan kendaraan tetap di jalurnya
+            self.x = self.road_x
                 
     def draw(self, screen):
         # Gambar badan kendaraan
@@ -301,6 +329,10 @@ class Vehicle:
             pygame.draw.circle(screen, YELLOW, (self.x + self.width, self.y + self.height//2), 5)
         elif self.direction == Direction.LEFT:
             pygame.draw.circle(screen, YELLOW, (self.x, self.y + self.height//2), 5)
+        elif self.direction == Direction.DOWN:
+            pygame.draw.circle(screen, YELLOW, (self.x + self.height//2, self.y + self.width), 5)
+        elif self.direction == Direction.UP:
+            pygame.draw.circle(screen, YELLOW, (self.x + self.height//2, self.y), 5)
 
 # Kelas untuk lampu lalu lintas
 class TrafficLight:
@@ -427,10 +459,30 @@ class MiniMap:
         pygame.draw.rect(screen, LIGHT_BLUE, (self.x, self.y, self.width, self.height))
         pygame.draw.rect(screen, BLACK, (self.x, self.y, self.width, self.height), 2)
         
-        # Gambar jalan di mini map
+        # Gambar jalan horizontal utama di mini map
         road_width = 40
         pygame.draw.rect(screen, GRAY, (self.x, self.y + self.height//2 - road_width//2, 
                                         self.width, road_width))
+        
+        # Gambar jalan vertikal utama di mini map
+        pygame.draw.rect(screen, GRAY, (self.x + self.width//2 - road_width//2, self.y, 
+                                        road_width, self.height))
+        
+        # Gambar jalan horizontal kedua di mini map
+        pygame.draw.rect(screen, GRAY, (self.x, self.y + self.height//4 - road_width//2, 
+                                        self.width, road_width))
+        
+        # Gambar jalan vertikal kedua di mini map
+        pygame.draw.rect(screen, GRAY, (self.x + self.width//4 - road_width//2, self.y, 
+                                        road_width, self.height))
+        
+        # Gambar jalan horizontal ketiga di mini map
+        pygame.draw.rect(screen, GRAY, (self.x, self.y + 3*self.height//4 - road_width//2, 
+                                        self.width, road_width))
+        
+        # Gambar jalan vertikal ketiga di mini map
+        pygame.draw.rect(screen, GRAY, (self.x + 3*self.width//4 - road_width//2, self.y, 
+                                        road_width, self.height))
         
         # Gambar posisi pemain
         player_x = self.x + player.x * self.scale_x
@@ -494,17 +546,17 @@ def draw_road(screen):
         pygame.draw.rect(screen, YELLOW, (x, SCREEN_HEIGHT//2 - 2, 20, 4))
     
     # Gambar trotoar
-    pygame.draw.rect(screen, DARK_GRAY, (0, SCREEN_HEIGHT//2 - 70, SCREEN_WIDTH, 10))
-    pygame.draw.rect(screen, DARK_GRAY, (0, SCREEN_HEIGHT//2 + 60, SCREEN_WIDTH, 10))
+    pygame.draw.rect(screen, SIDEWALK_COLOR, (0, SCREEN_HEIGHT//2 - 70, SCREEN_WIDTH, 10))
+    pygame.draw.rect(screen, SIDEWALK_COLOR, (0, SCREEN_HEIGHT//2 + 60, SCREEN_WIDTH, 10))
     
-    # Gambar jalan vertikal (persimpangan)
+    # Gambar jalan vertikal utama
     pygame.draw.rect(screen, GRAY, (SCREEN_WIDTH//2 - 60, 0, 120, SCREEN_HEIGHT))
     
     # Gambar garis tengah jalan vertikal
     for y in range(0, SCREEN_HEIGHT, 40):
         pygame.draw.rect(screen, YELLOW, (SCREEN_WIDTH//2 - 2, y, 4, 20))
     
-    # Gambar zebra cross di persimpangan
+    # Gambar zebra cross di persimpangan utama
     for i in range(5):
         y_offset = SCREEN_HEIGHT//2 - 50 + i * 20
         pygame.draw.rect(screen, WHITE, (SCREEN_WIDTH//2 - 60, y_offset, 120, 10))
@@ -512,6 +564,86 @@ def draw_road(screen):
     for i in range(5):
         x_offset = SCREEN_WIDTH//2 - 50 + i * 20
         pygame.draw.rect(screen, WHITE, (x_offset, SCREEN_HEIGHT//2 - 60, 10, 120))
+    
+    # Gambar jalan horizontal kedua (atas)
+    pygame.draw.rect(screen, GRAY, (0, SCREEN_HEIGHT//4 - 40, SCREEN_WIDTH, 80))
+    
+    # Gambar garis tengah jalan horizontal kedua
+    for x in range(0, SCREEN_WIDTH, 40):
+        pygame.draw.rect(screen, YELLOW, (x, SCREEN_HEIGHT//4 - 2, 20, 4))
+    
+    # Gambar trotoar jalan horizontal kedua
+    pygame.draw.rect(screen, SIDEWALK_COLOR, (0, SCREEN_HEIGHT//4 - 50, SCREEN_WIDTH, 10))
+    pygame.draw.rect(screen, SIDEWALK_COLOR, (0, SCREEN_HEIGHT//4 + 40, SCREEN_WIDTH, 10))
+    
+    # Gambar jalan horizontal ketiga (bawah)
+    pygame.draw.rect(screen, GRAY, (0, 3*SCREEN_HEIGHT//4 - 40, SCREEN_WIDTH, 80))
+    
+    # Gambar garis tengah jalan horizontal ketiga
+    for x in range(0, SCREEN_WIDTH, 40):
+        pygame.draw.rect(screen, YELLOW, (x, 3*SCREEN_HEIGHT//4 - 2, 20, 4))
+    
+    # Gambar trotoar jalan horizontal ketiga
+    pygame.draw.rect(screen, SIDEWALK_COLOR, (0, 3*SCREEN_HEIGHT//4 - 50, SCREEN_WIDTH, 10))
+    pygame.draw.rect(screen, SIDEWALK_COLOR, (0, 3*SCREEN_HEIGHT//4 + 40, SCREEN_WIDTH, 10))
+    
+    # Gambar jalan vertikal kedua (kiri)
+    pygame.draw.rect(screen, GRAY, (SCREEN_WIDTH//4 - 40, 0, 80, SCREEN_HEIGHT))
+    
+    # Gambar garis tengah jalan vertikal kedua
+    for y in range(0, SCREEN_HEIGHT, 40):
+        pygame.draw.rect(screen, YELLOW, (SCREEN_WIDTH//4 - 2, y, 4, 20))
+    
+    # Gambar trotoar jalan vertikal kedua
+    pygame.draw.rect(screen, SIDEWALK_COLOR, (SCREEN_WIDTH//4 - 50, 0, 10, SCREEN_HEIGHT))
+    pygame.draw.rect(screen, SIDEWALK_COLOR, (SCREEN_WIDTH//4 + 40, 0, 10, SCREEN_HEIGHT))
+    
+    # Gambar jalan vertikal ketiga (kanan)
+    pygame.draw.rect(screen, GRAY, (3*SCREEN_WIDTH//4 - 40, 0, 80, SCREEN_HEIGHT))
+    
+    # Gambar garis tengah jalan vertikal ketiga
+    for y in range(0, SCREEN_HEIGHT, 40):
+        pygame.draw.rect(screen, YELLOW, (3*SCREEN_WIDTH//4 - 2, y, 4, 20))
+    
+    # Gambar trotoar jalan vertikal ketiga
+    pygame.draw.rect(screen, SIDEWALK_COLOR, (3*SCREEN_WIDTH//4 - 50, 0, 10, SCREEN_HEIGHT))
+    pygame.draw.rect(screen, SIDEWALK_COLOR, (3*SCREEN_WIDTH//4 + 40, 0, 10, SCREEN_HEIGHT))
+    
+    # Gambar zebra cross di persimpangan kedua (atas)
+    for i in range(5):
+        y_offset = SCREEN_HEIGHT//4 - 30 + i * 12
+        pygame.draw.rect(screen, WHITE, (SCREEN_WIDTH//2 - 60, y_offset, 120, 8))
+        
+    for i in range(5):
+        x_offset = SCREEN_WIDTH//2 - 30 + i * 12
+        pygame.draw.rect(screen, WHITE, (x_offset, SCREEN_HEIGHT//4 - 40, 8, 80))
+    
+    # Gambar zebra cross di persimpangan ketiga (bawah)
+    for i in range(5):
+        y_offset = 3*SCREEN_HEIGHT//4 - 30 + i * 12
+        pygame.draw.rect(screen, WHITE, (SCREEN_WIDTH//2 - 60, y_offset, 120, 8))
+        
+    for i in range(5):
+        x_offset = SCREEN_WIDTH//2 - 30 + i * 12
+        pygame.draw.rect(screen, WHITE, (x_offset, 3*SCREEN_HEIGHT//4 - 40, 8, 80))
+    
+    # Gambar zebra cross di persimpangan keempat (kiri)
+    for i in range(5):
+        y_offset = SCREEN_HEIGHT//2 - 30 + i * 12
+        pygame.draw.rect(screen, WHITE, (SCREEN_WIDTH//4 - 40, y_offset, 80, 8))
+        
+    for i in range(5):
+        x_offset = SCREEN_WIDTH//4 - 30 + i * 12
+        pygame.draw.rect(screen, WHITE, (x_offset, SCREEN_HEIGHT//2 - 60, 8, 120))
+    
+    # Gambar zebra cross di persimpangan kelima (kanan)
+    for i in range(5):
+        y_offset = SCREEN_HEIGHT//2 - 30 + i * 12
+        pygame.draw.rect(screen, WHITE, (3*SCREEN_WIDTH//4 - 40, y_offset, 80, 8))
+        
+    for i in range(5):
+        x_offset = 3*SCREEN_WIDTH//4 - 30 + i * 12
+        pygame.draw.rect(screen, WHITE, (x_offset, SCREEN_HEIGHT//2 - 60, 8, 120))
 
 # Fungsi untuk menggambar background
 def draw_background(screen):
@@ -519,22 +651,61 @@ def draw_background(screen):
     screen.fill(LIGHT_BLUE)
     
     # Gambar awan
-    for i in range(7):
-        x = 100 + i * 160
+    for i in range(10):
+        x = 100 + i * 140
         y = 50 + (i % 3) * 40
         pygame.draw.ellipse(screen, WHITE, (x, y, 70, 35))
         pygame.draw.ellipse(screen, WHITE, (x + 25, y - 12, 70, 35))
         pygame.draw.ellipse(screen, WHITE, (x + 50, y, 70, 35))
     
+    # Gambar area rumput di antara jalan
+    grass_areas = [
+        {"x": 0, "y": 0, "width": SCREEN_WIDTH, "height": SCREEN_HEIGHT//4 - 70},
+        {"x": 0, "y": SCREEN_HEIGHT//4 + 50, "width": SCREEN_WIDTH, "height": SCREEN_HEIGHT//4 - 110},
+        {"x": 0, "y": SCREEN_HEIGHT//2 + 70, "width": SCREEN_WIDTH, "height": SCREEN_HEIGHT//4 - 110},
+        {"x": 0, "y": 3*SCREEN_HEIGHT//4 + 50, "width": SCREEN_WIDTH, "height": SCREEN_HEIGHT - (3*SCREEN_HEIGHT//4 + 50)}
+    ]
+    
+    for grass in grass_areas:
+        pygame.draw.rect(screen, GRASS_GREEN, (grass["x"], grass["y"], grass["width"], grass["height"]))
+    
     # Gambar gedung di background
     buildings = [
-        {"x": 50, "y": 100, "width": 120, "height": 200, "color": (200, 200, 220)},
-        {"x": 200, "y": 150, "width": 100, "height": 150, "color": (180, 180, 200)},
-        {"x": 330, "y": 80, "width": 150, "height": 220, "color": (210, 210, 230)},
-        {"x": 520, "y": 120, "width": 110, "height": 180, "color": (190, 190, 210)},
-        {"x": 670, "y": 90, "width": 130, "height": 210, "color": (200, 200, 220)},
-        {"x": 840, "y": 140, "width": 100, "height": 160, "color": (180, 180, 200)},
-        {"x": 980, "y": 100, "width": 120, "height": 200, "color": (210, 210, 230)}
+        # Area atas
+        {"x": 50, "y": 100, "width": 120, "height": 200, "color": random.choice(BUILDING_COLORS)},
+        {"x": 200, "y": 150, "width": 100, "height": 150, "color": random.choice(BUILDING_COLORS)},
+        {"x": 330, "y": 80, "width": 150, "height": 220, "color": random.choice(BUILDING_COLORS)},
+        {"x": 520, "y": 120, "width": 110, "height": 180, "color": random.choice(BUILDING_COLORS)},
+        {"x": 670, "y": 90, "width": 130, "height": 210, "color": random.choice(BUILDING_COLORS)},
+        {"x": 840, "y": 140, "width": 100, "height": 160, "color": random.choice(BUILDING_COLORS)},
+        {"x": 980, "y": 100, "width": 120, "height": 200, "color": random.choice(BUILDING_COLORS)},
+        {"x": 1150, "y": 130, "width": 140, "height": 190, "color": random.choice(BUILDING_COLORS)},
+        
+        # Area tengah kiri
+        {"x": 50, "y": 400, "width": 130, "height": 180, "color": random.choice(BUILDING_COLORS)},
+        {"x": 200, "y": 450, "width": 110, "height": 160, "color": random.choice(BUILDING_COLORS)},
+        
+        # Area tengah kanan
+        {"x": 1050, "y": 400, "width": 130, "height": 180, "color": random.choice(BUILDING_COLORS)},
+        {"x": 1200, "y": 450, "width": 110, "height": 160, "color": random.choice(BUILDING_COLORS)},
+        
+        # Area bawah
+        {"x": 50, "y": 700, "width": 120, "height": 170, "color": random.choice(BUILDING_COLORS)},
+        {"x": 200, "y": 750, "width": 100, "height": 150, "color": random.choice(BUILDING_COLORS)},
+        {"x": 350, "y": 680, "width": 140, "height": 190, "color": random.choice(BUILDING_COLORS)},
+        {"x": 520, "y": 720, "width": 120, "height": 160, "color": random.choice(BUILDING_COLORS)},
+        {"x": 670, "y": 690, "width": 130, "height": 180, "color": random.choice(BUILDING_COLORS)},
+        {"x": 840, "y": 740, "width": 110, "height": 150, "color": random.choice(BUILDING_COLORS)},
+        {"x": 980, "y": 700, "width": 120, "height": 170, "color": random.choice(BUILDING_COLORS)},
+        {"x": 1150, "y": 750, "width": 140, "height": 150, "color": random.choice(BUILDING_COLORS)},
+        
+        # Area kiri jalan vertikal
+        {"x": 50, "y": 250, "width": 100, "height": 120, "color": random.choice(BUILDING_COLORS)},
+        {"x": 50, "y": 550, "width": 100, "height": 120, "color": random.choice(BUILDING_COLORS)},
+        
+        # Area kanan jalan vertikal
+        {"x": 1250, "y": 250, "width": 100, "height": 120, "color": random.choice(BUILDING_COLORS)},
+        {"x": 1250, "y": 550, "width": 100, "height": 120, "color": random.choice(BUILDING_COLORS)}
     ]
     
     for building in buildings:
@@ -563,14 +734,38 @@ def draw_background(screen):
     
     # Gambar pohon
     trees = [
+        # Area atas
+        {"x": 150, "y": SCREEN_HEIGHT//4 - 50},
+        {"x": 400, "y": SCREEN_HEIGHT//4 - 50},
+        {"x": 650, "y": SCREEN_HEIGHT//4 - 50},
+        {"x": 900, "y": SCREEN_HEIGHT//4 - 50},
+        {"x": 1150, "y": SCREEN_HEIGHT//4 - 50},
+        
+        # Area tengah
         {"x": 150, "y": SCREEN_HEIGHT//2 - 150},
         {"x": 400, "y": SCREEN_HEIGHT//2 - 150},
         {"x": 650, "y": SCREEN_HEIGHT//2 - 150},
         {"x": 900, "y": SCREEN_HEIGHT//2 - 150},
-        {"x": 150, "y": SCREEN_HEIGHT//2 + 150},
-        {"x": 400, "y": SCREEN_HEIGHT//2 + 150},
-        {"x": 650, "y": SCREEN_HEIGHT//2 + 150},
-        {"x": 900, "y": SCREEN_HEIGHT//2 + 150}
+        {"x": 1150, "y": SCREEN_HEIGHT//2 - 150},
+        
+        # Area bawah
+        {"x": 150, "y": 3*SCREEN_HEIGHT//4 - 50},
+        {"x": 400, "y": 3*SCREEN_HEIGHT//4 - 50},
+        {"x": 650, "y": 3*SCREEN_HEIGHT//4 - 50},
+        {"x": 900, "y": 3*SCREEN_HEIGHT//4 - 50},
+        {"x": 1150, "y": 3*SCREEN_HEIGHT//4 - 50},
+        
+        # Area kiri jalan vertikal
+        {"x": SCREEN_WIDTH//4 - 50, "y": 150},
+        {"x": SCREEN_WIDTH//4 - 50, "y": 350},
+        {"x": SCREEN_WIDTH//4 - 50, "y": 550},
+        {"x": SCREEN_WIDTH//4 - 50, "y": 750},
+        
+        # Area kanan jalan vertikal
+        {"x": 3*SCREEN_WIDTH//4 - 50, "y": 150},
+        {"x": 3*SCREEN_WIDTH//4 - 50, "y": 350},
+        {"x": 3*SCREEN_WIDTH//4 - 50, "y": 550},
+        {"x": 3*SCREEN_WIDTH//4 - 50, "y": 750}
     ]
     
     for tree in trees:
@@ -738,36 +933,99 @@ def main():
     
     # Buat kendaraan
     vehicles = [
+        # Jalan horizontal utama
         Vehicle(100, SCREEN_HEIGHT//2 + 30, Direction.RIGHT, RED, 2, "car"),
         Vehicle(300, SCREEN_HEIGHT//2 + 30, Direction.RIGHT, BLUE, 3, "car"),
         Vehicle(500, SCREEN_HEIGHT//2 + 30, Direction.RIGHT, GREEN, 2.5, "car"),
         Vehicle(700, SCREEN_HEIGHT//2 + 30, Direction.RIGHT, YELLOW, 2, "car"),
         Vehicle(900, SCREEN_HEIGHT//2 + 30, Direction.RIGHT, (255, 0, 255), 2.5, "car"),
-        Vehicle(200, SCREEN_HEIGHT//2 - 70, Direction.LEFT, ORANGE, 2.5, "car"),
-        Vehicle(400, SCREEN_HEIGHT//2 - 70, Direction.LEFT, (0, 255, 255), 3, "car"),
-        Vehicle(600, SCREEN_HEIGHT//2 - 70, Direction.LEFT, (255, 165, 0), 2, "car"),
-        Vehicle(800, SCREEN_HEIGHT//2 - 70, Direction.LEFT, (128, 0, 128), 2.5, "car"),
-        Vehicle(1000, SCREEN_HEIGHT//2 - 70, Direction.LEFT, (0, 128, 128), 3, "car"),
-        # Truk
+        Vehicle(1100, SCREEN_HEIGHT//2 + 30, Direction.RIGHT, (0, 128, 128), 3, "car"),
+        Vehicle(200, SCREEN_HEIGHT//2 - 30, Direction.LEFT, ORANGE, 2.5, "car"),
+        Vehicle(400, SCREEN_HEIGHT//2 - 30, Direction.LEFT, (0, 255, 255), 3, "car"),
+        Vehicle(600, SCREEN_HEIGHT//2 - 30, Direction.LEFT, (255, 165, 0), 2, "car"),
+        Vehicle(800, SCREEN_HEIGHT//2 - 30, Direction.LEFT, (128, 0, 128), 2.5, "car"),
+        Vehicle(1000, SCREEN_HEIGHT//2 - 30, Direction.LEFT, (0, 128, 128), 3, "car"),
+        Vehicle(1200, SCREEN_HEIGHT//2 - 30, Direction.LEFT, (128, 128, 0), 2.2, "car"),
+        
+        # Truk di jalan horizontal utama
         Vehicle(150, SCREEN_HEIGHT//2 + 30, Direction.RIGHT, (100, 100, 100), 1.5, "truck"),
-        Vehicle(650, SCREEN_HEIGHT//2 - 70, Direction.LEFT, (120, 120, 120), 1.8, "truck"),
-        # Kendaraan vertikal
+        Vehicle(650, SCREEN_HEIGHT//2 - 30, Direction.LEFT, (120, 120, 120), 1.8, "truck"),
+        
+        # Jalan horizontal kedua (atas)
+        Vehicle(100, SCREEN_HEIGHT//4 + 20, Direction.RIGHT, (200, 100, 0), 2.2, "car"),
+        Vehicle(400, SCREEN_HEIGHT//4 + 20, Direction.RIGHT, (0, 100, 200), 2.8, "car"),
+        Vehicle(700, SCREEN_HEIGHT//4 + 20, Direction.RIGHT, (100, 200, 0), 2.5, "car"),
+        Vehicle(1000, SCREEN_HEIGHT//4 + 20, Direction.RIGHT, (200, 0, 100), 2.2, "car"),
+        Vehicle(200, SCREEN_HEIGHT//4 - 20, Direction.LEFT, (100, 0, 200), 2.5, "car"),
+        Vehicle(500, SCREEN_HEIGHT//4 - 20, Direction.LEFT, (0, 200, 100), 2.8, "car"),
+        Vehicle(800, SCREEN_HEIGHT//4 - 20, Direction.LEFT, (200, 100, 0), 2.2, "car"),
+        Vehicle(1100, SCREEN_HEIGHT//4 - 20, Direction.LEFT, (100, 200, 0), 2.5, "car"),
+        
+        # Jalan horizontal ketiga (bawah)
+        Vehicle(150, 3*SCREEN_HEIGHT//4 + 20, Direction.RIGHT, (0, 100, 200), 2.5, "car"),
+        Vehicle(450, 3*SCREEN_HEIGHT//4 + 20, Direction.RIGHT, (200, 0, 100), 2.2, "car"),
+        Vehicle(750, 3*SCREEN_HEIGHT//4 + 20, Direction.RIGHT, (100, 200, 0), 2.8, "car"),
+        Vehicle(1050, 3*SCREEN_HEIGHT//4 + 20, Direction.RIGHT, (200, 100, 0), 2.5, "car"),
+        Vehicle(250, 3*SCREEN_HEIGHT//4 - 20, Direction.LEFT, (100, 0, 200), 2.2, "car"),
+        Vehicle(550, 3*SCREEN_HEIGHT//4 - 20, Direction.LEFT, (0, 200, 100), 2.8, "car"),
+        Vehicle(850, 3*SCREEN_HEIGHT//4 - 20, Direction.LEFT, (200, 100, 0), 2.5, "car"),
+        Vehicle(1150, 3*SCREEN_HEIGHT//4 - 20, Direction.LEFT, (100, 200, 0), 2.2, "car"),
+        
+        # Jalan vertikal utama
         Vehicle(SCREEN_WIDTH//2 + 30, 100, Direction.DOWN, (200, 100, 0), 2, "car"),
-        Vehicle(SCREEN_WIDTH//2 - 70, 300, Direction.UP, (0, 100, 200), 2.5, "car"),
+        Vehicle(SCREEN_WIDTH//2 - 30, 300, Direction.UP, (0, 100, 200), 2.5, "car"),
         Vehicle(SCREEN_WIDTH//2 + 30, 500, Direction.DOWN, (100, 200, 0), 2.2, "car"),
-        Vehicle(SCREEN_WIDTH//2 - 70, 700, Direction.UP, (200, 0, 100), 2.8, "car")
+        Vehicle(SCREEN_WIDTH//2 - 30, 700, Direction.UP, (200, 0, 100), 2.8, "car"),
+        
+        # Jalan vertikal kedua (kiri)
+        Vehicle(SCREEN_WIDTH//4 + 20, 150, Direction.DOWN, (100, 0, 200), 2.5, "car"),
+        Vehicle(SCREEN_WIDTH//4 - 20, 350, Direction.UP, (0, 200, 100), 2.2, "car"),
+        Vehicle(SCREEN_WIDTH//4 + 20, 550, Direction.DOWN, (200, 100, 0), 2.8, "car"),
+        Vehicle(SCREEN_WIDTH//4 - 20, 750, Direction.UP, (100, 200, 0), 2.5, "car"),
+        
+        # Jalan vertikal ketiga (kanan)
+        Vehicle(3*SCREEN_WIDTH//4 + 20, 200, Direction.DOWN, (0, 200, 100), 2.2, "car"),
+        Vehicle(3*SCREEN_WIDTH//4 - 20, 400, Direction.UP, (200, 100, 0), 2.8, "car"),
+        Vehicle(3*SCREEN_WIDTH//4 + 20, 600, Direction.DOWN, (100, 0, 200), 2.5, "car"),
+        Vehicle(3*SCREEN_WIDTH//4 - 20, 800, Direction.UP, (0, 100, 200), 2.2, "car")
     ]
     
     # Buat lampu lalu lintas
     traffic_lights = [
+        # Persimpangan utama
         TrafficLight(300, SCREEN_HEIGHT//2 - 120),
         TrafficLight(700, SCREEN_HEIGHT//2 - 120),
         TrafficLight(SCREEN_WIDTH//2 - 120, 300),
-        TrafficLight(SCREEN_WIDTH//2 + 120, 500)
+        TrafficLight(SCREEN_WIDTH//2 + 120, 500),
+        
+        # Persimpangan atas
+        TrafficLight(300, SCREEN_HEIGHT//4 - 80),
+        TrafficLight(700, SCREEN_HEIGHT//4 - 80),
+        TrafficLight(SCREEN_WIDTH//2 - 120, 150),
+        TrafficLight(SCREEN_WIDTH//2 + 120, 250),
+        
+        # Persimpangan bawah
+        TrafficLight(300, 3*SCREEN_HEIGHT//4 - 80),
+        TrafficLight(700, 3*SCREEN_HEIGHT//4 - 80),
+        TrafficLight(SCREEN_WIDTH//2 - 120, 550),
+        TrafficLight(SCREEN_WIDTH//2 + 120, 650),
+        
+        # Persimpangan kiri
+        TrafficLight(SCREEN_WIDTH//4 - 80, 300),
+        TrafficLight(SCREEN_WIDTH//4 - 80, 500),
+        TrafficLight(150, SCREEN_HEIGHT//2 - 120),
+        TrafficLight(250, SCREEN_HEIGHT//2 + 40),
+        
+        # Persimpangan kanan
+        TrafficLight(3*SCREEN_WIDTH//4 - 80, 300),
+        TrafficLight(3*SCREEN_WIDTH//4 - 80, 500),
+        TrafficLight(1050, SCREEN_HEIGHT//2 - 120),
+        TrafficLight(1150, SCREEN_HEIGHT//2 + 40)
     ]
     
     # Buat misi
     missions = [
+        # Misi di persimpangan utama
         Mission(200, SCREEN_HEIGHT//2 - 180, MissionType.QUESTION, 
                 "Apa arti lampu lalu lintas berwarna merah?", "Berhenti"),
         Mission(500, SCREEN_HEIGHT//2 - 180, MissionType.ACTION, 
@@ -777,15 +1035,51 @@ def main():
                 "Apa arti rambu berbentuk segitiga dengan warna merah?", "Peringatan"),
         Mission(700, SCREEN_HEIGHT//2 + 180, MissionType.ACTION, 
                 None, None, "Jalan saat lampu hijau"),
-        Mission(SCREEN_WIDTH//2 - 180, 200, MissionType.QUESTION, 
+        
+        # Misi di persimpangan atas
+        Mission(200, SCREEN_HEIGHT//4 - 120, MissionType.QUESTION, 
                 "Apa arti rambu berbentuk lingkaran dengan warna merah dan garis diagonal?", "Dilarang"),
-        Mission(SCREEN_WIDTH//2 + 180, 200, MissionType.TREASURE),
-        Mission(SCREEN_WIDTH//2 - 180, 600, MissionType.QUESTION, 
-                "Apa arti rambu berbentuk segi empat dengan warna biru?", "Kewajiban"),
-        Mission(SCREEN_WIDTH//2 + 180, 600, MissionType.ACTION, 
+        Mission(500, SCREEN_HEIGHT//4 - 120, MissionType.ACTION, 
                 None, None, "Berhati-hati di zebra cross"),
-        Mission(SCREEN_WIDTH//2, SCREEN_HEIGHT//2 - 250, MissionType.QUESTION, 
-                "Apa yang harus dilakukan saat melihat rambu berhenti?", "Berhenti total")
+        Mission(800, SCREEN_HEIGHT//4 - 120, MissionType.TREASURE),
+        Mission(300, SCREEN_HEIGHT//4 + 80, MissionType.QUESTION, 
+                "Apa arti rambu berbentuk segi empat dengan warna biru?", "Kewajiban"),
+        Mission(700, SCREEN_HEIGHT//4 + 80, MissionType.ACTION, 
+                None, None, "Prioritaskan pejalan kaki"),
+        
+        # Misi di persimpangan bawah
+        Mission(200, 3*SCREEN_HEIGHT//4 - 120, MissionType.QUESTION, 
+                "Apa yang harus dilakukan saat melihat rambu berhenti?", "Berhenti total"),
+        Mission(500, 3*SCREEN_HEIGHT//4 - 120, MissionType.ACTION, 
+                None, None, "Lihat ke kiri dan kanan"),
+        Mission(800, 3*SCREEN_HEIGHT//4 - 120, MissionType.TREASURE),
+        Mission(300, 3*SCREEN_HEIGHT//4 + 80, MissionType.QUESTION, 
+                "Apa arti rambu dengan gambar anak menyeberang?", "Penyeberangan pejalan kaki"),
+        Mission(700, 3*SCREEN_HEIGHT//4 + 80, MissionType.ACTION, 
+                None, None, "Berjalan di trotoar"),
+        
+        # Misi di persimpangan kiri
+        Mission(SCREEN_WIDTH//4 - 120, 200, MissionType.QUESTION, 
+                "Apa arti rambu dengan gambar sepeda?", "Lintasan sepeda"),
+        Mission(SCREEN_WIDTH//4 - 120, 400, MissionType.ACTION, 
+                None, None, "Hati-hati dengan sepeda"),
+        Mission(SCREEN_WIDTH//4 - 120, 600, MissionType.TREASURE),
+        
+        # Misi di persimpangan kanan
+        Mission(3*SCREEN_WIDTH//4 - 120, 200, MissionType.QUESTION, 
+                "Apa arti rambu dengan gambar orang berjalan?", "Hanya untuk pejalan kaki"),
+        Mission(3*SCREEN_WIDTH//4 - 120, 400, MissionType.ACTION, 
+                None, None, "Jangan berjalan di jalan raya"),
+        Mission(3*SCREEN_WIDTH//4 - 120, 600, MissionType.TREASURE),
+        
+        # Misi tambahan di area terbuka
+        Mission(SCREEN_WIDTH//4, SCREEN_HEIGHT//4, MissionType.QUESTION, 
+                "Apa yang harus dilakukan sebelum menyeberang jalan?", "Lihat kiri kanan kiri lagi"),
+        Mission(3*SCREEN_WIDTH//4, SCREEN_HEIGHT//4, MissionType.ACTION, 
+                None, None, "Tunggu sampai aman"),
+        Mission(SCREEN_WIDTH//4, 3*SCREEN_HEIGHT//4, MissionType.TREASURE),
+        Mission(3*SCREEN_WIDTH//4, 3*SCREEN_HEIGHT//4, MissionType.QUESTION, 
+                "Mengapa kita harus mematuhi rambu lalu lintas?", "Untuk keselamatan")
     ]
     
     # Buat mini map
@@ -809,8 +1103,17 @@ def main():
     dialog_options = []
     score = 0
     font = pygame.font.SysFont('Arial', 24)
+    
+    # Timer untuk dialog "Berhasil!"
+    success_dialog_timer = 0
+    
+    # Timer untuk dialog "Harta Karun Ditemukan!"
+    treasure_dialog_timer = 0
+    
+    # Timer untuk achievement
     achievement_timer = 0
     current_achievement = None
+    achievement_queue = []  # Queue untuk achievement yang akan ditampilkan
     
     while running:
         # Event handling
@@ -828,6 +1131,9 @@ def main():
                             mission.completed = False
                         for achievement in achievements:
                             achievement.unlocked = False
+                        achievement_queue = []
+                        success_dialog_timer = 0
+                        treasure_dialog_timer = 0
                 elif dialog_active:
                     # Tangani input dialog
                     if event.key >= pygame.K_1 and event.key <= pygame.K_9:
@@ -912,12 +1218,14 @@ def main():
                                             dialog_title = "Berhasil!"
                                             dialog_message = "Kamu berhenti dengan benar saat lampu merah. Dapat 15 poin!"
                                             dialog_active = True
+                                            success_dialog_timer = 120  # 2 detik untuk dialog berhasil
                                         elif light.state == TrafficLightState.GREEN and player.is_moving:
                                             score += 15
                                             mission.completed = True
                                             dialog_title = "Berhasil!"
                                             dialog_message = "Kamu jalan dengan benar saat lampu hijau. Dapat 15 poin!"
                                             dialog_active = True
+                                            success_dialog_timer = 120  # 2 detik untuk dialog berhasil
                                         break
                                 
                                 if not light_nearby:
@@ -935,14 +1243,39 @@ def main():
                                     dialog_message = "Kamu menemukan harta karun! Dapat 20 poin!"
                                 mission.completed = True
                                 dialog_active = True
+                                treasure_dialog_timer = 120  # 2 detik untuk dialog harta karun
                             break
             
             # Cek achievement
             missions_completed = sum(1 for mission in missions if mission.completed)
             for achievement in achievements:
                 if achievement.check_unlock(score, player.lives, missions_completed):
-                    current_achievement = achievement
-                    achievement_timer = 180  # 3 detik
+                    # Tambahkan achievement ke queue
+                    if achievement not in achievement_queue:
+                        achievement_queue.append(achievement)
+            
+            # Jika tidak ada achievement yang sedang ditampilkan dan ada achievement di queue
+            if current_achievement is None and achievement_queue and achievement_timer <= 0:
+                current_achievement = achievement_queue.pop(0)
+                achievement_timer = 180  # 3 detik
+        
+        # Update timer dialog "Berhasil!"
+        if success_dialog_timer > 0:
+            success_dialog_timer -= 1
+            if success_dialog_timer <= 0:
+                dialog_active = False
+        
+        # Update timer dialog "Harta Karun Ditemukan!"
+        if treasure_dialog_timer > 0:
+            treasure_dialog_timer -= 1
+            if treasure_dialog_timer <= 0:
+                dialog_active = False
+        
+        # Update achievement timer
+        if achievement_timer > 0:
+            achievement_timer -= 1
+            if achievement_timer <= 0:
+                current_achievement = None
         
         # Drawing
         draw_background(screen)
@@ -997,11 +1330,8 @@ def main():
             show_game_over(screen, score)
         
         # Gambar achievement
-        if current_achievement and achievement_timer > 0:
+        if current_achievement:
             show_achievement(screen, current_achievement)
-            achievement_timer -= 1
-            if achievement_timer <= 0:
-                current_achievement = None
         
         pygame.display.flip()
         clock.tick(FPS)
