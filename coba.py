@@ -2,1342 +2,929 @@ import pygame
 import sys
 import math
 import random
-from enum import Enum
-import json
 
 # Inisialisasi Pygame
 pygame.init()
 
 # Konstanta
-SCREEN_WIDTH = 1400
-SCREEN_HEIGHT = 900
+SCREEN_WIDTH = 1000
+SCREEN_HEIGHT = 700
 FPS = 60
 
 # Warna
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-BLUE = (0, 0, 255)
-YELLOW = (255, 255, 0)
-GRAY = (150, 150, 150)
-DARK_GRAY = (80, 80, 80)
-LIGHT_BLUE = (173, 216, 230)
+GRAY = (200, 200, 200)
+RED = (255, 50, 50)
+GREEN = (50, 255, 50)
+BLUE = (50, 50, 255)
+YELLOW = (255, 255, 50)
 BROWN = (139, 69, 19)
+LIGHT_BLUE = (173, 216, 230)
+DARK_BLUE = (0, 0, 139)
+PURPLE = (128, 0, 128)
 ORANGE = (255, 165, 0)
-SKIN_COLOR = (255, 220, 177)
-HAIR_COLOR = (50, 30, 20)
-CLOTHES_COLOR = (0, 100, 200)
-PANTS_COLOR = (30, 30, 150)
-SHOES_COLOR = (20, 20, 20)
-GRASS_GREEN = (34, 139, 34)
-SIDEWALK_COLOR = (192, 192, 192)
-BUILDING_COLORS = [(200, 200, 220), (180, 180, 200), (210, 210, 230), (190, 190, 210)]
+PINK = (255, 192, 203)
 
-# Enum untuk arah
-class Direction(Enum):
-    UP = 0
-    RIGHT = 1
-    DOWN = 2
-    LEFT = 3
+# Font
+font_small = pygame.font.SysFont('Arial', 16)
+font_medium = pygame.font.SysFont('Arial', 24)
+font_large = pygame.font.SysFont('Arial', 32)
 
-# Enum untuk state lampu lalu lintas
-class TrafficLightState(Enum):
-    RED = 0
-    YELLOW = 1
-    GREEN = 2
-
-# Enum untuk jenis misi
-class MissionType(Enum):
-    QUESTION = 0
-    ACTION = 1
-    TREASURE = 2
-
-# Enum untuk state game
-class GameState(Enum):
-    PLAYING = 0
-    GAME_OVER = 1
-    PAUSED = 2
-    ACHIEVEMENT = 3
-
-# Kelas untuk karakter pemain
-class Player:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-        self.width = 20  # Diperkecil dari 30
-        self.height = 40  # Diperkecil dari 60
-        self.speed = 5
-        self.direction = Direction.DOWN
-        self.animation_counter = 0
-        self.is_moving = False
-        self.lives = 3
-        self.invulnerable = False
-        self.invulnerable_timer = 0
-        
-    def move(self, dx, dy):
-        self.x += dx * self.speed
-        self.y += dy * self.speed
-        
-        # Batasi gerakan di layar
-        self.x = max(50, min(self.x, SCREEN_WIDTH - 150))
-        self.y = max(50, min(self.y, SCREEN_HEIGHT - 150))
-        
-        # Tentukan arah berdasarkan gerakan
-        if dx > 0:
-            self.direction = Direction.RIGHT
-        elif dx < 0:
-            self.direction = Direction.LEFT
-        elif dy > 0:
-            self.direction = Direction.DOWN
-        elif dy < 0:
-            self.direction = Direction.UP
-            
-        self.is_moving = (dx != 0 or dy != 0)
-        
-    def hit(self):
-        if not self.invulnerable:
-            self.lives -= 1
-            self.invulnerable = True
-            self.invulnerable_timer = 120  # 2 detik invulnerability
-            
-    def update(self):
-        if self.invulnerable:
-            self.invulnerable_timer -= 1
-            if self.invulnerable_timer <= 0:
-                self.invulnerable = False
-                
-    def draw(self, screen):
-        # Efek kedip saat invulnerable
-        if self.invulnerable and self.invulnerable_timer % 10 < 5:
-            return
-            
-        # Animasi berjalan
-        if self.is_moving:
-            self.animation_counter += 0.2
-        else:
-            self.animation_counter = 0
-            
-        # Gambar kaki dengan animasi
-        leg_offset = 5  # Diperkecil dari 8
-        leg_y = self.y + self.height//2
-        
-        if self.is_moving:
-            # Animasi kaki bergerak
-            left_leg_x = self.x - leg_offset + math.sin(self.animation_counter) * 5  # Diperkecil dari 8
-            right_leg_x = self.x + leg_offset - math.sin(self.animation_counter) * 5  # Diperkecil dari 8
-        else:
-            left_leg_x = self.x - leg_offset
-            right_leg_x = self.x + leg_offset
-            
-        # Gambar celana
-        pygame.draw.rect(screen, PANTS_COLOR, (self.x - self.width//2, self.y - self.height//4, 
-                                              self.width, self.height//2 + 5))  # Diperkecil
-        
-        # Gambar kaki
-        pygame.draw.rect(screen, PANTS_COLOR, (left_leg_x - 4, leg_y, 8, 15))  # Diperkecil
-        pygame.draw.rect(screen, PANTS_COLOR, (right_leg_x - 4, leg_y, 8, 15))  # Diperkecil
-        
-        # Gambar sepatu
-        pygame.draw.ellipse(screen, SHOES_COLOR, (left_leg_x - 5, leg_y + 13, 10, 8))  # Diperkecil
-        pygame.draw.ellipse(screen, SHOES_COLOR, (right_leg_x - 5, leg_y + 13, 10, 8))  # Diperkecil
-        
-        # Gambar tubuh (baju)
-        body_rect = pygame.Rect(self.x - self.width//2, self.y - self.height//2, 
-                               self.width, self.height//2)
-        pygame.draw.rect(screen, CLOTHES_COLOR, body_rect, border_radius=3)  # Diperkecil
-        
-        # Gambar kepala
-        head_radius = 10  # Diperkecil dari 15
-        head_pos = (self.x, self.y - self.height//2 - head_radius)
-        pygame.draw.circle(screen, SKIN_COLOR, head_pos, head_radius)
-        
-        # Gambar rambut
-        if self.direction == Direction.RIGHT:
-            hair_points = [
-                (head_pos[0] - head_radius + 2, head_pos[1] - head_radius + 3),
-                (head_pos[0] + head_radius - 2, head_pos[1] - head_radius + 3),
-                (head_pos[0] + head_radius - 3, head_pos[1] - 1),
-                (head_pos[0] - head_radius + 3, head_pos[1] - 1)
-            ]
-        elif self.direction == Direction.LEFT:
-            hair_points = [
-                (head_pos[0] - head_radius + 2, head_pos[1] - head_radius + 3),
-                (head_pos[0] + head_radius - 2, head_pos[1] - head_radius + 3),
-                (head_pos[0] + head_radius - 3, head_pos[1] - 1),
-                (head_pos[0] - head_radius + 3, head_pos[1] - 1)
-            ]
-        else:
-            hair_points = [
-                (head_pos[0] - head_radius + 2, head_pos[1] - head_radius + 3),
-                (head_pos[0] + head_radius - 2, head_pos[1] - head_radius + 3),
-                (head_pos[0] + head_radius - 3, head_pos[1] - 1),
-                (head_pos[0] - head_radius + 3, head_pos[1] - 1)
-            ]
-        pygame.draw.polygon(screen, HAIR_COLOR, hair_points)
-        
-        # Gambar mata
-        eye_offset_x = 3  # Diperkecil dari 5
-        eye_offset_y = -2  # Diperkecil dari -3
-        if self.direction == Direction.RIGHT:
-            left_eye = (head_pos[0] + eye_offset_x, head_pos[1] + eye_offset_y)
-            right_eye = (head_pos[0] + eye_offset_x + 2, head_pos[1] + eye_offset_y)  # Diperkecil
-        elif self.direction == Direction.LEFT:
-            left_eye = (head_pos[0] - eye_offset_x - 2, head_pos[1] + eye_offset_y)  # Diperkecil
-            right_eye = (head_pos[0] - eye_offset_x, head_pos[1] + eye_offset_y)
-        else:
-            left_eye = (head_pos[0] - eye_offset_x, head_pos[1] + eye_offset_y)
-            right_eye = (head_pos[0] + eye_offset_x, head_pos[1] + eye_offset_y)
-            
-        pygame.draw.circle(screen, BLACK, left_eye, 1.5)  # Diperkecil
-        pygame.draw.circle(screen, BLACK, right_eye, 1.5)  # Diperkecil
-        
-        # Gambar mulut senyum
-        if self.direction == Direction.RIGHT or self.direction == Direction.LEFT:
-            smile_rect = pygame.Rect(head_pos[0] - 3, head_pos[1] + 3, 6, 3)  # Diperkecil
-        else:
-            smile_rect = pygame.Rect(head_pos[0] - 3, head_pos[1] + 3, 6, 3)  # Diperkecil
-        pygame.draw.arc(screen, BLACK, smile_rect, 0, math.pi, 1)
-        
-        # Gambar tangan
-        hand_offset = 8  # Diperkecil dari 12
-        hand_y = self.y - self.height//4
-        
-        if self.direction == Direction.RIGHT:
-            left_hand = (self.x - self.width//2 - hand_offset, hand_y)
-            right_hand = (self.x + self.width//2 + hand_offset, hand_y)
-        elif self.direction == Direction.LEFT:
-            left_hand = (self.x - self.width//2 - hand_offset, hand_y)
-            right_hand = (self.x + self.width//2 + hand_offset, hand_y)
-        else:
-            left_hand = (self.x - self.width//2 - hand_offset, hand_y)
-            right_hand = (self.x + self.width//2 + hand_offset, hand_y)
-            
-        pygame.draw.circle(screen, SKIN_COLOR, left_hand, 5)  # Diperkecil
-        pygame.draw.circle(screen, SKIN_COLOR, right_hand, 5)  # Diperkecil
-        
-        # Gambar lengan
-        if self.direction == Direction.RIGHT:
-            pygame.draw.line(screen, CLOTHES_COLOR, 
-                            (self.x - self.width//2, self.y - self.height//4), 
-                            left_hand, 3)  # Diperkecil
-            pygame.draw.line(screen, CLOTHES_COLOR, 
-                            (self.x + self.width//2, self.y - self.height//4), 
-                            right_hand, 3)  # Diperkecil
-        elif self.direction == Direction.LEFT:
-            pygame.draw.line(screen, CLOTHES_COLOR, 
-                            (self.x - self.width//2, self.y - self.height//4), 
-                            left_hand, 3)  # Diperkecil
-            pygame.draw.line(screen, CLOTHES_COLOR, 
-                            (self.x + self.width//2, self.y - self.height//4), 
-                            right_hand, 3)  # Diperkecil
-        else:
-            pygame.draw.line(screen, CLOTHES_COLOR, 
-                            (self.x - self.width//2, self.y - self.height//4), 
-                            left_hand, 3)  # Diperkecil
-            pygame.draw.line(screen, CLOTHES_COLOR, 
-                            (self.x + self.width//2, self.y - self.height//4), 
-                            right_hand, 3)  # Diperkecil
-
-# Kelas untuk kendaraan
-class Vehicle:
-    def __init__(self, x, y, direction, color, speed, vehicle_type="car"):
-        self.x = x
-        self.y = y
-        self.width = 80 if vehicle_type == "car" else 120
-        self.height = 40 if vehicle_type == "car" else 50
-        self.direction = direction
+class Button:
+    def __init__(self, x, y, width, height, text, color, hover_color):
+        self.rect = pygame.Rect(x, y, width, height)
+        self.text = text
         self.color = color
-        self.speed = speed
-        self.vehicle_type = vehicle_type
-        # Tentukan jalur kendaraan berdasarkan arah
-        if direction == Direction.RIGHT or direction == Direction.LEFT:
-            self.road_y = y  # Posisi y jalan
-            self.road_min_y = y - 20  # Batas atas jalan
-            self.road_max_y = y + 20  # Batas bawah jalan
-        else:  # UP atau DOWN
-            self.road_x = x  # Posisi x jalan
-            self.road_min_x = x - 20  # Batas kiri jalan
-            self.road_max_x = x + 20  # Batas kanan jalan
-        
-    def update(self):
-        if self.direction == Direction.RIGHT:
-            self.x += self.speed
-            if self.x > SCREEN_WIDTH:
-                self.x = -self.width
-            # Pastikan kendaraan tetap di jalurnya
-            self.y = self.road_y
-        elif self.direction == Direction.LEFT:
-            self.x -= self.speed
-            if self.x < -self.width:
-                self.x = SCREEN_WIDTH
-            # Pastikan kendaraan tetap di jalurnya
-            self.y = self.road_y
-        elif self.direction == Direction.DOWN:
-            self.y += self.speed
-            if self.y > SCREEN_HEIGHT:
-                self.y = -self.height
-            # Pastikan kendaraan tetap di jalurnya
-            self.x = self.road_x
-        elif self.direction == Direction.UP:
-            self.y -= self.speed
-            if self.y < -self.height:
-                self.y = SCREEN_HEIGHT
-            # Pastikan kendaraan tetap di jalurnya
-            self.x = self.road_x
-                
-    def draw(self, screen):
-        # Gambar badan kendaraan
-        if self.direction == Direction.RIGHT or self.direction == Direction.LEFT:
-            body_rect = pygame.Rect(self.x, self.y, self.width, self.height)
-        else:
-            body_rect = pygame.Rect(self.x, self.y, self.height, self.width)
-            
-        pygame.draw.rect(screen, self.color, body_rect, border_radius=5)
-        
-        # Gambar jendela
-        window_color = (200, 220, 255)
-        if self.vehicle_type == "car":
-            if self.direction == Direction.RIGHT:
-                window_rect = pygame.Rect(self.x + self.width - 25, self.y + 5, 20, self.height - 10)
-            elif self.direction == Direction.LEFT:
-                window_rect = pygame.Rect(self.x + 5, self.y + 5, 20, self.height - 10)
-            else:
-                window_rect = pygame.Rect(self.x + 5, self.y + 5, self.height - 10, 20)
-        else:  # truck
-            if self.direction == Direction.RIGHT:
-                window_rect = pygame.Rect(self.x + self.width - 40, self.y + 5, 30, self.height - 10)
-            elif self.direction == Direction.LEFT:
-                window_rect = pygame.Rect(self.x + 10, self.y + 5, 30, self.height - 10)
-            else:
-                window_rect = pygame.Rect(self.x + 5, self.y + 5, self.height - 10, 30)
-                
-        pygame.draw.rect(screen, window_color, window_rect, border_radius=3)
-        
-        # Gambar roda
-        wheel_radius = 8
-        wheel_color = BLACK
-        if self.direction == Direction.RIGHT or self.direction == Direction.LEFT:
-            pygame.draw.circle(screen, wheel_color, (self.x + 20, self.y + self.height), wheel_radius)
-            pygame.draw.circle(screen, wheel_color, (self.x + self.width - 20, self.y + self.height), wheel_radius)
-        else:
-            pygame.draw.circle(screen, wheel_color, (self.x + self.height//2, self.y + 20), wheel_radius)
-            pygame.draw.circle(screen, wheel_color, (self.x + self.height//2, self.y + self.width - 20), wheel_radius)
-            
-        # Gambar lampu depan
-        if self.direction == Direction.RIGHT:
-            pygame.draw.circle(screen, YELLOW, (self.x + self.width, self.y + self.height//2), 5)
-        elif self.direction == Direction.LEFT:
-            pygame.draw.circle(screen, YELLOW, (self.x, self.y + self.height//2), 5)
-        elif self.direction == Direction.DOWN:
-            pygame.draw.circle(screen, YELLOW, (self.x + self.height//2, self.y + self.width), 5)
-        elif self.direction == Direction.UP:
-            pygame.draw.circle(screen, YELLOW, (self.x + self.height//2, self.y), 5)
-
-# Kelas untuk lampu lalu lintas
-class TrafficLight:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-        self.width = 25
-        self.height = 75
-        self.state = TrafficLightState.RED
-        self.timer = 0
-        self.state_duration = {
-            TrafficLightState.RED: 180,    # 3 detik
-            TrafficLightState.YELLOW: 60,  # 1 detik
-            TrafficLightState.GREEN: 120   # 2 detik
-        }
-        
-    def update(self):
-        self.timer += 1
-        if self.timer >= self.state_duration[self.state]:
-            self.timer = 0
-            if self.state == TrafficLightState.RED:
-                self.state = TrafficLightState.GREEN
-            elif self.state == TrafficLightState.GREEN:
-                self.state = TrafficLightState.YELLOW
-            elif self.state == TrafficLightState.YELLOW:
-                self.state = TrafficLightState.RED
-                
-    def draw(self, screen):
-        # Gambar tiang
-        pygame.draw.rect(screen, DARK_GRAY, (self.x - 4, self.y, 8, 120))
-        
-        # Gambar kotak lampu
-        box_rect = pygame.Rect(self.x - self.width//2, self.y - self.height, self.width, self.height)
-        pygame.draw.rect(screen, DARK_GRAY, box_rect, border_radius=5)
-        
-        # Gambar lampu
-        red_pos = (self.x, self.y - self.height + 20)
-        yellow_pos = (self.x, self.y - self.height//2)
-        green_pos = (self.x, self.y - 20)
-        
-        # Lampu merah
-        if self.state == TrafficLightState.RED:
-            pygame.draw.circle(screen, RED, red_pos, 10)
-        else:
-            pygame.draw.circle(screen, (100, 0, 0), red_pos, 10)
-            
-        # Lampu kuning
-        if self.state == TrafficLightState.YELLOW:
-            pygame.draw.circle(screen, YELLOW, yellow_pos, 10)
-        else:
-            pygame.draw.circle(screen, (100, 100, 0), yellow_pos, 10)
-            
-        # Lampu hijau
-        if self.state == TrafficLightState.GREEN:
-            pygame.draw.circle(screen, GREEN, green_pos, 10)
-        else:
-            pygame.draw.circle(screen, (0, 100, 0), green_pos, 10)
-
-# Kelas untuk misi
-class Mission:
-    def __init__(self, x, y, mission_type, question=None, answer=None, action=None):
-        self.x = x
-        self.y = y
-        self.radius = 25
-        self.mission_type = mission_type
-        self.question = question
-        self.answer = answer
-        self.action = action
-        self.completed = False
-        self.active = False
-        self.animation_counter = 0
-        
-    def update(self):
-        self.animation_counter += 0.05
+        self.hover_color = hover_color
+        self.is_hovered = False
         
     def draw(self, screen):
-        if self.completed:
-            return
-            
-        # Animasi pulsing
-        pulse = math.sin(self.animation_counter) * 3
-        radius = self.radius + pulse
+        color = self.hover_color if self.is_hovered else self.color
+        pygame.draw.rect(screen, color, self.rect, border_radius=10)
+        pygame.draw.rect(screen, BLACK, self.rect, 2, border_radius=10)
         
-        # Gambar ikon misi
-        if self.mission_type == MissionType.QUESTION:
-            # Tanda tanya
-            pygame.draw.circle(screen, YELLOW, (self.x, self.y), int(radius))
-            pygame.draw.circle(screen, BLACK, (self.x, self.y), int(radius), 2)
-            font = pygame.font.SysFont('Arial', 24, bold=True)
-            text = font.render("?", True, BLACK)
-            text_rect = text.get_rect(center=(self.x, self.y))
-            screen.blit(text, text_rect)
-        elif self.mission_type == MissionType.ACTION:
-            # Tanda seru
-            pygame.draw.circle(screen, ORANGE, (self.x, self.y), int(radius))
-            pygame.draw.circle(screen, BLACK, (self.x, self.y), int(radius), 2)
-            font = pygame.font.SysFont('Arial', 24, bold=True)
-            text = font.render("!", True, BLACK)
-            text_rect = text.get_rect(center=(self.x, self.y))
-            screen.blit(text, text_rect)
-        elif self.mission_type == MissionType.TREASURE:
-            # Kotak harta karun
-            size = int(radius * 1.5)
-            pygame.draw.rect(screen, BROWN, (self.x - size//2, self.y - size//2, 
-                                            size, size), border_radius=5)
-            pygame.draw.rect(screen, YELLOW, (self.x - size//2 + 5, self.y - size//2 + 5, 
-                                            size - 10, size - 10), border_radius=3)
-            # Gambar kunci
-            pygame.draw.rect(screen, YELLOW, (self.x - 3, self.y - size//2 + 10, 6, 10))
-            pygame.draw.circle(screen, YELLOW, (self.x, self.y - size//2 + 5), 5, 1)
-
-# Kelas untuk mini map
-class MiniMap:
-    def __init__(self, x, y, width, height):
-        self.x = x
-        self.y = y
-        self.width = width
-        self.height = height
-        self.scale_x = width / SCREEN_WIDTH
-        self.scale_y = height / SCREEN_HEIGHT
+        text_surf = font_medium.render(self.text, True, BLACK)
+        text_rect = text_surf.get_rect(center=self.rect.center)
+        screen.blit(text_surf, text_rect)
         
-    def draw(self, screen, player, missions, traffic_lights):
-        # Gambar background mini map
-        pygame.draw.rect(screen, LIGHT_BLUE, (self.x, self.y, self.width, self.height))
-        pygame.draw.rect(screen, BLACK, (self.x, self.y, self.width, self.height), 2)
+    def check_hover(self, pos):
+        self.is_hovered = self.rect.collidepoint(pos)
         
-        # Gambar jalan horizontal utama di mini map
-        road_width = 40
-        pygame.draw.rect(screen, GRAY, (self.x, self.y + self.height//2 - road_width//2, 
-                                        self.width, road_width))
-        
-        # Gambar jalan vertikal utama di mini map
-        pygame.draw.rect(screen, GRAY, (self.x + self.width//2 - road_width//2, self.y, 
-                                        road_width, self.height))
-        
-        # Gambar jalan horizontal kedua di mini map
-        pygame.draw.rect(screen, GRAY, (self.x, self.y + self.height//4 - road_width//2, 
-                                        self.width, road_width))
-        
-        # Gambar jalan vertikal kedua di mini map
-        pygame.draw.rect(screen, GRAY, (self.x + self.width//4 - road_width//2, self.y, 
-                                        road_width, self.height))
-        
-        # Gambar jalan horizontal ketiga di mini map
-        pygame.draw.rect(screen, GRAY, (self.x, self.y + 3*self.height//4 - road_width//2, 
-                                        self.width, road_width))
-        
-        # Gambar jalan vertikal ketiga di mini map
-        pygame.draw.rect(screen, GRAY, (self.x + 3*self.width//4 - road_width//2, self.y, 
-                                        road_width, self.height))
-        
-        # Gambar posisi pemain
-        player_x = self.x + player.x * self.scale_x
-        player_y = self.y + player.y * self.scale_y
-        pygame.draw.circle(screen, BLUE, (int(player_x), int(player_y)), 4)
-        
-        # Gambar posisi misi
-        for mission in missions:
-            if not mission.completed:
-                mission_x = self.x + mission.x * self.scale_x
-                mission_y = self.y + mission.y * self.scale_y
-                if mission.mission_type == MissionType.QUESTION:
-                    pygame.draw.circle(screen, YELLOW, (int(mission_x), int(mission_y)), 3)
-                elif mission.mission_type == MissionType.ACTION:
-                    pygame.draw.circle(screen, ORANGE, (int(mission_x), int(mission_y)), 3)
-                elif mission.mission_type == MissionType.TREASURE:
-                    pygame.draw.rect(screen, BROWN, (int(mission_x) - 3, int(mission_y) - 3, 6, 6))
-        
-        # Gambar posisi lampu lalu lintas
-        for light in traffic_lights:
-            light_x = self.x + light.x * self.scale_x
-            light_y = self.y + light.y * self.scale_y
-            if light.state == TrafficLightState.RED:
-                pygame.draw.circle(screen, RED, (int(light_x), int(light_y)), 3)
-            elif light.state == TrafficLightState.GREEN:
-                pygame.draw.circle(screen, GREEN, (int(light_x), int(light_y)), 3)
-            else:
-                pygame.draw.circle(screen, YELLOW, (int(light_x), int(light_y)), 3)
-
-# Kelas untuk Achievement
-class Achievement:
-    def __init__(self, name, description, condition):
-        self.name = name
-        self.description = description
-        self.condition = condition
-        self.unlocked = False
-        
-    def check_unlock(self, score, lives, missions_completed):
-        if not self.unlocked:
-            if self.condition == "score_100" and score >= 100:
-                self.unlocked = True
-                return True
-            elif self.condition == "score_200" and score >= 200:
-                self.unlocked = True
-                return True
-            elif self.condition == "all_missions" and missions_completed:
-                self.unlocked = True
-                return True
-            elif self.condition == "no_hit" and lives == 3 and missions_completed >= 5:
-                self.unlocked = True
-                return True
+    def is_clicked(self, pos, event):
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            return self.rect.collidepoint(pos)
         return False
 
-# Fungsi untuk menggambar jalan
-def draw_road(screen):
-    # Gambar jalan horizontal utama
-    pygame.draw.rect(screen, GRAY, (0, SCREEN_HEIGHT//2 - 60, SCREEN_WIDTH, 120))
-    
-    # Gambar garis tengah jalan
-    for x in range(0, SCREEN_WIDTH, 40):
-        pygame.draw.rect(screen, YELLOW, (x, SCREEN_HEIGHT//2 - 2, 20, 4))
-    
-    # Gambar trotoar
-    pygame.draw.rect(screen, SIDEWALK_COLOR, (0, SCREEN_HEIGHT//2 - 70, SCREEN_WIDTH, 10))
-    pygame.draw.rect(screen, SIDEWALK_COLOR, (0, SCREEN_HEIGHT//2 + 60, SCREEN_WIDTH, 10))
-    
-    # Gambar jalan vertikal utama
-    pygame.draw.rect(screen, GRAY, (SCREEN_WIDTH//2 - 60, 0, 120, SCREEN_HEIGHT))
-    
-    # Gambar garis tengah jalan vertikal
-    for y in range(0, SCREEN_HEIGHT, 40):
-        pygame.draw.rect(screen, YELLOW, (SCREEN_WIDTH//2 - 2, y, 4, 20))
-    
-    # Gambar zebra cross di persimpangan utama
-    for i in range(5):
-        y_offset = SCREEN_HEIGHT//2 - 50 + i * 20
-        pygame.draw.rect(screen, WHITE, (SCREEN_WIDTH//2 - 60, y_offset, 120, 10))
+class Card:
+    def __init__(self, x, y, width, height, text, color, shape, properties):
+        self.rect = pygame.Rect(x, y, width, height)
+        self.text = text
+        self.color = color
+        self.shape = shape  # "circle", "square", "triangle"
+        self.properties = properties  # Dictionary berisi properti kartu
+        self.dragging = False
+        self.original_pos = (x, y)
+        self.placed = False
+        self.error_feedback = None  # "color", "text", "shape", or None
+        self.drag_offset_x = 0
+        self.drag_offset_y = 0
         
-    for i in range(5):
-        x_offset = SCREEN_WIDTH//2 - 50 + i * 20
-        pygame.draw.rect(screen, WHITE, (x_offset, SCREEN_HEIGHT//2 - 60, 10, 120))
-    
-    # Gambar jalan horizontal kedua (atas)
-    pygame.draw.rect(screen, GRAY, (0, SCREEN_HEIGHT//4 - 40, SCREEN_WIDTH, 80))
-    
-    # Gambar garis tengah jalan horizontal kedua
-    for x in range(0, SCREEN_WIDTH, 40):
-        pygame.draw.rect(screen, YELLOW, (x, SCREEN_HEIGHT//4 - 2, 20, 4))
-    
-    # Gambar trotoar jalan horizontal kedua
-    pygame.draw.rect(screen, SIDEWALK_COLOR, (0, SCREEN_HEIGHT//4 - 50, SCREEN_WIDTH, 10))
-    pygame.draw.rect(screen, SIDEWALK_COLOR, (0, SCREEN_HEIGHT//4 + 40, SCREEN_WIDTH, 10))
-    
-    # Gambar jalan horizontal ketiga (bawah)
-    pygame.draw.rect(screen, GRAY, (0, 3*SCREEN_HEIGHT//4 - 40, SCREEN_WIDTH, 80))
-    
-    # Gambar garis tengah jalan horizontal ketiga
-    for x in range(0, SCREEN_WIDTH, 40):
-        pygame.draw.rect(screen, YELLOW, (x, 3*SCREEN_HEIGHT//4 - 2, 20, 4))
-    
-    # Gambar trotoar jalan horizontal ketiga
-    pygame.draw.rect(screen, SIDEWALK_COLOR, (0, 3*SCREEN_HEIGHT//4 - 50, SCREEN_WIDTH, 10))
-    pygame.draw.rect(screen, SIDEWALK_COLOR, (0, 3*SCREEN_HEIGHT//4 + 40, SCREEN_WIDTH, 10))
-    
-    # Gambar jalan vertikal kedua (kiri)
-    pygame.draw.rect(screen, GRAY, (SCREEN_WIDTH//4 - 40, 0, 80, SCREEN_HEIGHT))
-    
-    # Gambar garis tengah jalan vertikal kedua
-    for y in range(0, SCREEN_HEIGHT, 40):
-        pygame.draw.rect(screen, YELLOW, (SCREEN_WIDTH//4 - 2, y, 4, 20))
-    
-    # Gambar trotoar jalan vertikal kedua
-    pygame.draw.rect(screen, SIDEWALK_COLOR, (SCREEN_WIDTH//4 - 50, 0, 10, SCREEN_HEIGHT))
-    pygame.draw.rect(screen, SIDEWALK_COLOR, (SCREEN_WIDTH//4 + 40, 0, 10, SCREEN_HEIGHT))
-    
-    # Gambar jalan vertikal ketiga (kanan)
-    pygame.draw.rect(screen, GRAY, (3*SCREEN_WIDTH//4 - 40, 0, 80, SCREEN_HEIGHT))
-    
-    # Gambar garis tengah jalan vertikal ketiga
-    for y in range(0, SCREEN_HEIGHT, 40):
-        pygame.draw.rect(screen, YELLOW, (3*SCREEN_WIDTH//4 - 2, y, 4, 20))
-    
-    # Gambar trotoar jalan vertikal ketiga
-    pygame.draw.rect(screen, SIDEWALK_COLOR, (3*SCREEN_WIDTH//4 - 50, 0, 10, SCREEN_HEIGHT))
-    pygame.draw.rect(screen, SIDEWALK_COLOR, (3*SCREEN_WIDTH//4 + 40, 0, 10, SCREEN_HEIGHT))
-    
-    # Gambar zebra cross di persimpangan kedua (atas)
-    for i in range(5):
-        y_offset = SCREEN_HEIGHT//4 - 30 + i * 12
-        pygame.draw.rect(screen, WHITE, (SCREEN_WIDTH//2 - 60, y_offset, 120, 8))
+    def draw(self, screen):
+        # Gambar kartu
+        pygame.draw.rect(screen, WHITE, self.rect, border_radius=10)
+        pygame.draw.rect(screen, BLACK, self.rect, 2, border_radius=10)
         
-    for i in range(5):
-        x_offset = SCREEN_WIDTH//2 - 30 + i * 12
-        pygame.draw.rect(screen, WHITE, (x_offset, SCREEN_HEIGHT//4 - 40, 8, 80))
-    
-    # Gambar zebra cross di persimpangan ketiga (bawah)
-    for i in range(5):
-        y_offset = 3*SCREEN_HEIGHT//4 - 30 + i * 12
-        pygame.draw.rect(screen, WHITE, (SCREEN_WIDTH//2 - 60, y_offset, 120, 8))
+        # Gambar bentuk
+        if self.shape == "circle":
+            pygame.draw.circle(screen, self.color, self.rect.center, 30)
+        elif self.shape == "square":
+            shape_rect = pygame.Rect(self.rect.centerx - 30, self.rect.centery - 30, 60, 60)
+            pygame.draw.rect(screen, self.color, shape_rect)
+        elif self.shape == "triangle":
+            points = [
+                (self.rect.centerx, self.rect.centery - 30),
+                (self.rect.centerx - 30, self.rect.centery + 30),
+                (self.rect.centerx + 30, self.rect.centery + 30)
+            ]
+            pygame.draw.polygon(screen, self.color, points)
+            
+        # Gambar teks
+        text_surf = font_small.render(self.text, True, BLACK)
+        text_rect = text_surf.get_rect(center=(self.rect.centerx, self.rect.bottom - 20))
+        screen.blit(text_surf, text_rect)
         
-    for i in range(5):
-        x_offset = SCREEN_WIDTH//2 - 30 + i * 12
-        pygame.draw.rect(screen, WHITE, (x_offset, 3*SCREEN_HEIGHT//4 - 40, 8, 80))
+        # Gambar feedback error jika ada
+        if self.error_feedback:
+            if self.error_feedback == "color":
+                # Tanda X pada warna
+                if self.shape == "circle":
+                    pygame.draw.line(screen, RED, (self.rect.centerx - 20, self.rect.centery - 20), 
+                                    (self.rect.centerx + 20, self.rect.centery + 20), 3)
+                    pygame.draw.line(screen, RED, (self.rect.centerx + 20, self.rect.centery - 20), 
+                                    (self.rect.centerx - 20, self.rect.centery + 20), 3)
+                elif self.shape == "square":
+                    shape_rect = pygame.Rect(self.rect.centerx - 30, self.rect.centery - 30, 60, 60)
+                    pygame.draw.line(screen, RED, (shape_rect.left + 10, shape_rect.top + 10), 
+                                    (shape_rect.right - 10, shape_rect.bottom - 10), 3)
+                    pygame.draw.line(screen, RED, (shape_rect.right - 10, shape_rect.top + 10), 
+                                    (shape_rect.left + 10, shape_rect.bottom - 10), 3)
+                elif self.shape == "triangle":
+                    pygame.draw.line(screen, RED, (self.rect.centerx - 15, self.rect.centery), 
+                                    (self.rect.centerx + 15, self.rect.centery), 3)
+            elif self.error_feedback == "text":
+                # Tanda X pada teks
+                text_rect = text_surf.get_rect(center=(self.rect.centerx, self.rect.bottom - 20))
+                pygame.draw.line(screen, RED, (text_rect.left - 5, text_rect.top), 
+                                (text_rect.right + 5, text_rect.bottom), 3)
+                pygame.draw.line(screen, RED, (text_rect.right + 5, text_rect.top), 
+                                (text_rect.left - 5, text_rect.bottom), 3)
+            elif self.error_feedback == "shape":
+                # Tanda X pada bentuk
+                if self.shape == "circle":
+                    pygame.draw.circle(screen, RED, self.rect.center, 35, 3)
+                elif self.shape == "square":
+                    shape_rect = pygame.Rect(self.rect.centerx - 35, self.rect.centery - 35, 70, 70)
+                    pygame.draw.rect(screen, RED, shape_rect, 3)
+                elif self.shape == "triangle":
+                    points = [
+                        (self.rect.centerx, self.rect.centery - 35),
+                        (self.rect.centerx - 35, self.rect.centery + 35),
+                        (self.rect.centerx + 35, self.rect.centery + 35)
+                    ]
+                    pygame.draw.polygon(screen, RED, points, 3)
+                    
+    def check_drag(self, pos):
+        return self.rect.collidepoint(pos)
     
-    # Gambar zebra cross di persimpangan keempat (kiri)
-    for i in range(5):
-        y_offset = SCREEN_HEIGHT//2 - 30 + i * 12
-        pygame.draw.rect(screen, WHITE, (SCREEN_WIDTH//4 - 40, y_offset, 80, 8))
+    def start_drag(self, pos):
+        self.dragging = True
+        self.drag_offset_x = self.rect.x - pos[0]
+        self.drag_offset_y = self.rect.y - pos[1]
         
-    for i in range(5):
-        x_offset = SCREEN_WIDTH//4 - 30 + i * 12
-        pygame.draw.rect(screen, WHITE, (x_offset, SCREEN_HEIGHT//2 - 60, 8, 120))
-    
-    # Gambar zebra cross di persimpangan kelima (kanan)
-    for i in range(5):
-        y_offset = SCREEN_HEIGHT//2 - 30 + i * 12
-        pygame.draw.rect(screen, WHITE, (3*SCREEN_WIDTH//4 - 40, y_offset, 80, 8))
+    def stop_drag(self):
+        self.dragging = False
         
-    for i in range(5):
-        x_offset = 3*SCREEN_WIDTH//4 - 30 + i * 12
-        pygame.draw.rect(screen, WHITE, (x_offset, SCREEN_HEIGHT//2 - 60, 8, 120))
+    def update_position(self, pos):
+        if self.dragging:
+            self.rect.x = pos[0] + self.drag_offset_x
+            self.rect.y = pos[1] + self.drag_offset_y
+        
+    def reset_position(self):
+        self.rect.x, self.rect.y = self.original_pos
+        self.placed = False
+        self.error_feedback = None
 
-# Fungsi untuk menggambar background
-def draw_background(screen):
-    # Gambar langit
-    screen.fill(LIGHT_BLUE)
+class Plot:
+    def __init__(self, x, y, width, height, label, rules):
+        self.rect = pygame.Rect(x, y, width, height)
+        self.label = label
+        self.rules = rules  # Dictionary berisi aturan untuk petak ini
+        self.occupied = False
+        self.card = None
+        self.shaking = False
+        self.shake_time = 0
+        
+    def draw(self, screen):
+        # Efek getar jika ada kesalahan
+        offset_x = 0
+        if self.shaking:
+            offset_x = math.sin(self.shake_time * 10) * 5
+            self.shake_time += 0.1
+            if self.shake_time > 1:
+                self.shaking = False
+                self.shake_time = 0
+                
+        # Gambar petak
+        plot_rect = pygame.Rect(self.rect.x + offset_x, self.rect.y, self.rect.width, self.rect.height)
+        pygame.draw.rect(screen, LIGHT_BLUE, plot_rect, border_radius=10)
+        pygame.draw.rect(screen, BLACK, plot_rect, 2, border_radius=10)
+        
+        # Gambar label
+        label_surf = font_medium.render(self.label, True, BLACK)
+        label_rect = label_surf.get_rect(center=(plot_rect.centerx, plot_rect.top - 20))
+        screen.blit(label_surf, label_rect)
+        
+        # Gambar aturan
+        y_offset = 10
+        for rule_name, rule_value in self.rules.items():
+            rule_text = f"{rule_name}: {rule_value}"
+            rule_surf = font_small.render(rule_text, True, BLACK)
+            rule_rect = rule_surf.get_rect(topleft=(plot_rect.left + 10, plot_rect.top + y_offset))
+            screen.blit(rule_surf, rule_rect)
+            y_offset += 20
+            
+        # Gambar kartu jika ada
+        if self.card:
+            self.card.rect.center = plot_rect.center
+            self.card.draw(screen)
+            
+    def place_card(self, card):
+        if not self.occupied:
+            self.occupied = True
+            self.card = card
+            card.placed = True
+            return True
+        return False
+        
+    def remove_card(self):
+        if self.occupied:
+            self.occupied = False
+            card = self.card
+            self.card = None
+            card.placed = False
+            return card
+        return None
+        
+    def check_card(self, card):
+        # Periksa apakah kartu memenuhi semua aturan
+        valid = True
+        error_type = None
+        
+        for rule_name, rule_value in self.rules.items():
+            if rule_name == "Huruf Awal":
+                if not card.text.startswith(rule_value):
+                    valid = False
+                    error_type = "text"
+            elif rule_name == "Angka <":
+                try:
+                    # Coba ekstrak angka dari teks
+                    num = int(''.join(filter(str.isdigit, card.text)))
+                    if num >= rule_value:
+                        valid = False
+                        error_type = "text"
+                except:
+                    valid = False
+                    error_type = "text"
+            elif rule_name == "Warna Bukan":
+                if card.color == rule_value:
+                    valid = False
+                    error_type = "color"
+            elif rule_name == "Bentuk":
+                if card.shape != rule_value:
+                    valid = False
+                    error_type = "shape"
+                    
+        if not valid:
+            self.shaking = True
+            card.error_feedback = error_type
+            
+        return valid
+
+class SequenceCard:
+    def __init__(self, x, y, width, height, text, image_key, step_number):
+        self.rect = pygame.Rect(x, y, width, height)
+        self.text = text
+        self.image_key = image_key
+        self.step_number = step_number
+        self.dragging = False
+        self.original_pos = (x, y)
+        self.placed = False
+        self.correct_position = None
+        self.drag_offset_x = 0
+        self.drag_offset_y = 0
+        
+    def draw(self, screen):
+        # Gambar kartu
+        pygame.draw.rect(screen, WHITE, self.rect, border_radius=10)
+        pygame.draw.rect(screen, BLACK, self.rect, 2, border_radius=10)
+        
+        # Gambar nomor langkah
+        step_surf = font_medium.render(str(self.step_number), True, BLACK)
+        step_rect = step_surf.get_rect(topleft=(self.rect.left + 5, self.rect.top + 5))
+        screen.blit(step_surf, step_rect)
+        
+        # Gambar gambar sederhana berdasarkan image_key
+        if self.image_key == "bee":
+            # Gambar lebah sederhana
+            body_rect = pygame.Rect(self.rect.centerx - 20, self.rect.centery - 10, 40, 20)
+            pygame.draw.ellipse(screen, YELLOW, body_rect)
+            pygame.draw.ellipse(screen, BLACK, body_rect, 2)
+            
+            # Sayap
+            pygame.draw.ellipse(screen, WHITE, (body_rect.left - 10, body_rect.top - 5, 15, 10))
+            pygame.draw.ellipse(screen, WHITE, (body_rect.right - 5, body_rect.top - 5, 15, 10))
+            
+            # Garis hitam di badan
+            for i in range(3):
+                x = body_rect.left + 10 + i * 10
+                pygame.draw.line(screen, BLACK, (x, body_rect.top), (x, body_rect.bottom), 2)
+                
+        elif self.image_key == "flower":
+            # Gambar bunga sederhana
+            # Kelopak
+            petal_color = PINK
+            center_x, center_y = self.rect.centerx, self.rect.centery
+            petal_radius = 15
+            
+            for angle in range(0, 360, 60):
+                rad_angle = math.radians(angle)
+                petal_x = center_x + math.cos(rad_angle) * 20
+                petal_y = center_y + math.sin(rad_angle) * 20
+                pygame.draw.circle(screen, petal_color, (int(petal_x), int(petal_y)), petal_radius)
+                
+            # Tengah bunga
+            pygame.draw.circle(screen, YELLOW, (center_x, center_y), 10)
+            
+        elif self.image_key == "hive":
+            # Gambar sarang lebah sederhana
+            hive_rect = pygame.Rect(self.rect.centerx - 25, self.rect.centery - 20, 50, 40)
+            pygame.draw.polygon(screen, ORANGE, [
+                (hive_rect.left, hive_rect.centery),
+                (hive_rect.left + hive_rect.width // 3, hive_rect.top),
+                (hive_rect.right - hive_rect.width // 3, hive_rect.top),
+                (hive_rect.right, hive_rect.centery),
+                (hive_rect.right, hive_rect.bottom),
+                (hive_rect.left, hive_rect.bottom)
+            ])
+            
+            # Pola sarang
+            for y in range(hive_rect.top + 10, hive_rect.bottom, 10):
+                pygame.draw.line(screen, BLACK, (hive_rect.left + 5, y), (hive_rect.right - 5, y), 1)
+                
+        elif self.image_key == "honey":
+            # Gambar madu sederhana
+            jar_rect = pygame.Rect(self.rect.centerx - 15, self.rect.centery - 20, 30, 40)
+            pygame.draw.rect(screen, BROWN, jar_rect, border_radius=5)
+            
+            # Madu
+            honey_rect = pygame.Rect(jar_rect.left + 5, jar_rect.centery, jar_rect.width - 10, jar_rect.bottom - jar_rect.centery - 5)
+            pygame.draw.rect(screen, YELLOW, honey_rect, border_radius=3)
+            
+        # Gambar teks
+        text_surf = font_small.render(self.text, True, BLACK)
+        text_rect = text_surf.get_rect(center=(self.rect.centerx, self.rect.bottom - 20))
+        screen.blit(text_surf, text_rect)
+        
+    def check_drag(self, pos):
+        return self.rect.collidepoint(pos)
     
-    # Gambar awan
-    for i in range(10):
-        x = 100 + i * 140
-        y = 50 + (i % 3) * 40
-        pygame.draw.ellipse(screen, WHITE, (x, y, 70, 35))
-        pygame.draw.ellipse(screen, WHITE, (x + 25, y - 12, 70, 35))
-        pygame.draw.ellipse(screen, WHITE, (x + 50, y, 70, 35))
-    
-    # Gambar area rumput di antara jalan
-    grass_areas = [
-        {"x": 0, "y": 0, "width": SCREEN_WIDTH, "height": SCREEN_HEIGHT//4 - 70},
-        {"x": 0, "y": SCREEN_HEIGHT//4 + 50, "width": SCREEN_WIDTH, "height": SCREEN_HEIGHT//4 - 110},
-        {"x": 0, "y": SCREEN_HEIGHT//2 + 70, "width": SCREEN_WIDTH, "height": SCREEN_HEIGHT//4 - 110},
-        {"x": 0, "y": 3*SCREEN_HEIGHT//4 + 50, "width": SCREEN_WIDTH, "height": SCREEN_HEIGHT - (3*SCREEN_HEIGHT//4 + 50)}
-    ]
-    
-    for grass in grass_areas:
-        pygame.draw.rect(screen, GRASS_GREEN, (grass["x"], grass["y"], grass["width"], grass["height"]))
-    
-    # Gambar gedung di background
-    buildings = [
-        # Area atas
-        {"x": 50, "y": 100, "width": 120, "height": 200, "color": random.choice(BUILDING_COLORS)},
-        {"x": 200, "y": 150, "width": 100, "height": 150, "color": random.choice(BUILDING_COLORS)},
-        {"x": 330, "y": 80, "width": 150, "height": 220, "color": random.choice(BUILDING_COLORS)},
-        {"x": 520, "y": 120, "width": 110, "height": 180, "color": random.choice(BUILDING_COLORS)},
-        {"x": 670, "y": 90, "width": 130, "height": 210, "color": random.choice(BUILDING_COLORS)},
-        {"x": 840, "y": 140, "width": 100, "height": 160, "color": random.choice(BUILDING_COLORS)},
-        {"x": 980, "y": 100, "width": 120, "height": 200, "color": random.choice(BUILDING_COLORS)},
-        {"x": 1150, "y": 130, "width": 140, "height": 190, "color": random.choice(BUILDING_COLORS)},
+    def start_drag(self, pos):
+        self.dragging = True
+        self.drag_offset_x = self.rect.x - pos[0]
+        self.drag_offset_y = self.rect.y - pos[1]
         
-        # Area tengah kiri
-        {"x": 50, "y": 400, "width": 130, "height": 180, "color": random.choice(BUILDING_COLORS)},
-        {"x": 200, "y": 450, "width": 110, "height": 160, "color": random.choice(BUILDING_COLORS)},
+    def stop_drag(self):
+        self.dragging = False
         
-        # Area tengah kanan
-        {"x": 1050, "y": 400, "width": 130, "height": 180, "color": random.choice(BUILDING_COLORS)},
-        {"x": 1200, "y": 450, "width": 110, "height": 160, "color": random.choice(BUILDING_COLORS)},
+    def update_position(self, pos):
+        if self.dragging:
+            self.rect.x = pos[0] + self.drag_offset_x
+            self.rect.y = pos[1] + self.drag_offset_y
         
-        # Area bawah
-        {"x": 50, "y": 700, "width": 120, "height": 170, "color": random.choice(BUILDING_COLORS)},
-        {"x": 200, "y": 750, "width": 100, "height": 150, "color": random.choice(BUILDING_COLORS)},
-        {"x": 350, "y": 680, "width": 140, "height": 190, "color": random.choice(BUILDING_COLORS)},
-        {"x": 520, "y": 720, "width": 120, "height": 160, "color": random.choice(BUILDING_COLORS)},
-        {"x": 670, "y": 690, "width": 130, "height": 180, "color": random.choice(BUILDING_COLORS)},
-        {"x": 840, "y": 740, "width": 110, "height": 150, "color": random.choice(BUILDING_COLORS)},
-        {"x": 980, "y": 700, "width": 120, "height": 170, "color": random.choice(BUILDING_COLORS)},
-        {"x": 1150, "y": 750, "width": 140, "height": 150, "color": random.choice(BUILDING_COLORS)},
+    def reset_position(self):
+        self.rect.x, self.rect.y = self.original_pos
+        self.placed = False
+
+class SequenceSlot:
+    def __init__(self, x, y, width, height, index):
+        self.rect = pygame.Rect(x, y, width, height)
+        self.index = index
+        self.occupied = False
+        self.card = None
+        self.correct = False
         
-        # Area kiri jalan vertikal
-        {"x": 50, "y": 250, "width": 100, "height": 120, "color": random.choice(BUILDING_COLORS)},
-        {"x": 50, "y": 550, "width": 100, "height": 120, "color": random.choice(BUILDING_COLORS)},
+    def draw(self, screen):
+        # Gambar slot
+        color = GREEN if self.correct else LIGHT_BLUE
+        pygame.draw.rect(screen, color, self.rect, border_radius=10)
+        pygame.draw.rect(screen, BLACK, self.rect, 2, border_radius=10)
         
-        # Area kanan jalan vertikal
-        {"x": 1250, "y": 250, "width": 100, "height": 120, "color": random.choice(BUILDING_COLORS)},
-        {"x": 1250, "y": 550, "width": 100, "height": 120, "color": random.choice(BUILDING_COLORS)}
-    ]
-    
-    for building in buildings:
-        # Gambar badan gedung
-        pygame.draw.rect(screen, building["color"], 
-                        (building["x"], building["y"], building["width"], building["height"]))
+        # Gambar nomor slot
+        num_surf = font_medium.render(str(self.index + 1), True, BLACK)
+        num_rect = num_surf.get_rect(center=(self.rect.centerx, self.rect.top - 15))
+        screen.blit(num_surf, num_rect)
         
-        # Gambar atap
-        roof_points = [
-            (building["x"] - 10, building["y"]),
-            (building["x"] + building["width"]//2, building["y"] - 30),
-            (building["x"] + building["width"] + 10, building["y"])
+        # Gambar kartu jika ada
+        if self.card:
+            self.card.rect.center = self.rect.center
+            self.card.draw(screen)
+            
+    def place_card(self, card):
+        if not self.occupied:
+            self.occupied = True
+            self.card = card
+            card.placed = True
+            card.correct_position = self.index
+            return True
+        return False
+        
+    def remove_card(self):
+        if self.occupied:
+            self.occupied = False
+            card = self.card
+            self.card = None
+            card.placed = False
+            return card
+        return None
+
+class Bee:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.size = 30
+        self.speed = 2
+        self.target_x = x
+        self.target_y = y
+        self.moving = False
+        
+    def draw(self, screen):
+        # Gambar badan lebah
+        body_rect = pygame.Rect(self.x - self.size//2, self.y - self.size//4, self.size, self.size//2)
+        pygame.draw.ellipse(screen, YELLOW, body_rect)
+        pygame.draw.ellipse(screen, BLACK, body_rect, 2)
+        
+        # Garis hitam di badan
+        for i in range(3):
+            x = body_rect.left + 5 + i * 8
+            pygame.draw.line(screen, BLACK, (x, body_rect.top), (x, body_rect.bottom), 2)
+            
+        # Sayap
+        wing_offset = math.sin(pygame.time.get_ticks() / 100) * 5
+        pygame.draw.ellipse(screen, WHITE, (body_rect.left - 10, body_rect.top - 5 + wing_offset, 15, 10))
+        pygame.draw.ellipse(screen, WHITE, (body_rect.right - 5, body_rect.top - 5 - wing_offset, 15, 10))
+        
+    def move_to(self, x, y):
+        self.target_x = x
+        self.target_y = y
+        self.moving = True
+        
+    def update(self):
+        if self.moving:
+            dx = self.target_x - self.x
+            dy = self.target_y - self.y
+            distance = math.sqrt(dx**2 + dy**2)
+            
+            if distance < self.speed:
+                self.x = self.target_x
+                self.y = self.target_y
+                self.moving = False
+            else:
+                self.x += (dx / distance) * self.speed
+                self.y += (dy / distance) * self.speed
+
+class Game:
+    def __init__(self):
+        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        pygame.display.set_caption("Bee Literate: Logic Garden")
+        self.clock = pygame.time.Clock()
+        self.running = True
+        self.state = "MENU"  # MENU, LOGIC_PUZZLE, SEQUENCE_PUZZLE, WIN, LOSE
+        self.score = 0
+        self.level = 1
+        self.feedback_timer = 0
+        self.feedback_text = ""
+        
+        # Inisialisasi komponen game
+        self.init_game_components()
+        
+    def init_game_components(self):
+        # Tombol menu
+        self.menu_buttons = [
+            Button(350, 200, 300, 60, "Petak Rumpang Logika", GREEN, LIGHT_BLUE),
+            Button(350, 280, 300, 60, "Rantai Pembuatan Madu", YELLOW, LIGHT_BLUE),
+            Button(350, 360, 300, 60, "Keluar", RED, LIGHT_BLUE)
         ]
-        pygame.draw.polygon(screen, (150, 50, 50), roof_points)
         
-        # Gambar jendela
-        window_rows = building["height"] // 40
-        window_cols = building["width"] // 30
+        # Tombol kembali
+        self.back_button = Button(20, 20, 100, 40, "Kembali", RED, LIGHT_BLUE)
         
-        for row in range(window_rows):
-            for col in range(window_cols):
-                if random.random() > 0.3:  # Beberapa jendela mati
-                    window_x = building["x"] + 15 + col * 30
-                    window_y = building["y"] + 20 + row * 40
-                    pygame.draw.rect(screen, (150, 180, 220), (window_x, window_y, 20, 25))
-    
-    # Gambar pohon
-    trees = [
-        # Area atas
-        {"x": 150, "y": SCREEN_HEIGHT//4 - 50},
-        {"x": 400, "y": SCREEN_HEIGHT//4 - 50},
-        {"x": 650, "y": SCREEN_HEIGHT//4 - 50},
-        {"x": 900, "y": SCREEN_HEIGHT//4 - 50},
-        {"x": 1150, "y": SCREEN_HEIGHT//4 - 50},
+        # Tombol cek jawaban
+        self.check_button = Button(SCREEN_WIDTH - 150, 20, 130, 40, "Cek Jawaban", GREEN, LIGHT_BLUE)
         
-        # Area tengah
-        {"x": 150, "y": SCREEN_HEIGHT//2 - 150},
-        {"x": 400, "y": SCREEN_HEIGHT//2 - 150},
-        {"x": 650, "y": SCREEN_HEIGHT//2 - 150},
-        {"x": 900, "y": SCREEN_HEIGHT//2 - 150},
-        {"x": 1150, "y": SCREEN_HEIGHT//2 - 150},
+        # Tombol reset
+        self.reset_button = Button(SCREEN_WIDTH - 150, 70, 130, 40, "Reset", YELLOW, LIGHT_BLUE)
         
-        # Area bawah
-        {"x": 150, "y": 3*SCREEN_HEIGHT//4 - 50},
-        {"x": 400, "y": 3*SCREEN_HEIGHT//4 - 50},
-        {"x": 650, "y": 3*SCREEN_HEIGHT//4 - 50},
-        {"x": 900, "y": 3*SCREEN_HEIGHT//4 - 50},
-        {"x": 1150, "y": 3*SCREEN_HEIGHT//4 - 50},
+        # Inisialisasi komponen Petak Rumpang Logika
+        self.init_logic_puzzle()
         
-        # Area kiri jalan vertikal
-        {"x": SCREEN_WIDTH//4 - 50, "y": 150},
-        {"x": SCREEN_WIDTH//4 - 50, "y": 350},
-        {"x": SCREEN_WIDTH//4 - 50, "y": 550},
-        {"x": SCREEN_WIDTH//4 - 50, "y": 750},
+        # Inisialisasi komponen Rantai Pembuatan Madu
+        self.init_sequence_puzzle()
         
-        # Area kanan jalan vertikal
-        {"x": 3*SCREEN_WIDTH//4 - 50, "y": 150},
-        {"x": 3*SCREEN_WIDTH//4 - 50, "y": 350},
-        {"x": 3*SCREEN_WIDTH//4 - 50, "y": 550},
-        {"x": 3*SCREEN_WIDTH//4 - 50, "y": 750}
-    ]
-    
-    for tree in trees:
-        # Gambar batang pohon
-        pygame.draw.rect(screen, BROWN, (tree["x"] - 5, tree["y"], 10, 40))
+    def init_logic_puzzle(self):
+        # Petak dengan aturan
+        self.plots = [
+            Plot(200, 200, 200, 150, "Petak A", {
+                "Huruf Awal": "B",
+                "Warna Bukan": RED
+            }),
+            Plot(500, 200, 200, 150, "Petak B", {
+                "Angka <": 5,
+                "Bentuk": "circle"
+            }),
+            Plot(800, 200, 200, 150, "Petak C", {
+                "Huruf Awal": "M",
+                "Bentuk": "square"
+            })
+        ]
         
-        # Gambar daun
-        pygame.draw.circle(screen, (0, 150, 0), (tree["x"], tree["y"] - 10), 25)
-        pygame.draw.circle(screen, (0, 170, 0), (tree["x"] - 15, tree["y"] - 5), 20)
-        pygame.draw.circle(screen, (0, 170, 0), (tree["x"] + 15, tree["y"] - 5), 20)
-        pygame.draw.circle(screen, (0, 190, 0), (tree["x"], tree["y"] - 25), 22)
-
-# Fungsi untuk menampilkan dialog
-def show_dialog(screen, title, message, options=None):
-    # Gambar background dialog
-    dialog_width = 700
-    dialog_height = 350
-    dialog_x = (SCREEN_WIDTH - dialog_width) // 2
-    dialog_y = (SCREEN_HEIGHT - dialog_height) // 2
-    
-    pygame.draw.rect(screen, WHITE, (dialog_x, dialog_y, dialog_width, dialog_height), border_radius=15)
-    pygame.draw.rect(screen, BLACK, (dialog_x, dialog_y, dialog_width, dialog_height), 3, border_radius=15)
-    
-    # Gambar judul
-    title_font = pygame.font.SysFont('Arial', 32, bold=True)
-    title_text = title_font.render(title, True, BLACK)
-    title_rect = title_text.get_rect(center=(SCREEN_WIDTH // 2, dialog_y + 50))
-    screen.blit(title_text, title_rect)
-    
-    # Gambar pesan
-    message_font = pygame.font.SysFont('Arial', 24)
-    words = message.split(' ')
-    lines = []
-    current_line = []
-    
-    for word in words:
-        current_line.append(word)
-        test_line = ' '.join(current_line)
-        text_width, _ = message_font.size(test_line)
+        # Kartu pilihan
+        self.cards = [
+            Card(100, 450, 120, 120, "Bola", BLUE, "circle", {"text": "Bola", "color": BLUE, "shape": "circle"}),
+            Card(250, 450, 120, 120, "Meja", RED, "square", {"text": "Meja", "color": RED, "shape": "square"}),
+            Card(400, 450, 120, 120, "Buku", GREEN, "square", {"text": "Buku", "color": GREEN, "shape": "square"}),
+            Card(550, 450, 120, 120, "3", BLUE, "circle", {"text": "3", "color": BLUE, "shape": "circle"}),
+            Card(700, 450, 120, 120, "Mobil", YELLOW, "square", {"text": "Mobil", "color": YELLOW, "shape": "square"}),
+            Card(850, 450, 120, 120, "7", RED, "triangle", {"text": "7", "color": RED, "shape": "triangle"})
+        ]
         
-        if text_width > dialog_width - 60:
-            current_line.pop()
-            lines.append(' '.join(current_line))
-            current_line = [word]
-    
-    if current_line:
-        lines.append(' '.join(current_line))
-    
-    y_offset = dialog_y + 100
-    for line in lines:
-        line_text = message_font.render(line, True, BLACK)
-        line_rect = line_text.get_rect(center=(SCREEN_WIDTH // 2, y_offset))
-        screen.blit(line_text, line_rect)
-        y_offset += 35
-    
-    # Gambar opsi jika ada
-    if options:
-        option_font = pygame.font.SysFont('Arial', 22)
-        option_y = dialog_y + dialog_height - 80
+        # Status game
+        self.logic_puzzle_complete = False
         
-        for i, option in enumerate(options):
-            option_text = option_font.render(f"{i+1}. {option}", True, BLACK)
-            option_rect = option_text.get_rect(center=(SCREEN_WIDTH // 2, option_y))
-            screen.blit(option_text, option_rect)
-            option_y += 30
-
-# Fungsi untuk menampilkan game over
-def show_game_over(screen, score):
-    # Gambar background
-    overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
-    overlay.fill((0, 0, 0, 180))
-    screen.blit(overlay, (0, 0))
-    
-    # Gambar kotak game over
-    box_width = 600
-    box_height = 400
-    box_x = (SCREEN_WIDTH - box_width) // 2
-    box_y = (SCREEN_HEIGHT - box_height) // 2
-    
-    pygame.draw.rect(screen, WHITE, (box_x, box_y, box_width, box_height), border_radius=20)
-    pygame.draw.rect(screen, RED, (box_x, box_y, box_width, box_height), 5, border_radius=20)
-    
-    # Gambar teks
-    title_font = pygame.font.SysFont('Arial', 48, bold=True)
-    title_text = title_font.render("GAME OVER", True, RED)
-    title_rect = title_text.get_rect(center=(SCREEN_WIDTH // 2, box_y + 80))
-    screen.blit(title_text, title_rect)
-    
-    score_font = pygame.font.SysFont('Arial', 36)
-    score_text = score_font.render(f"Skor Akhir: {score}", True, BLACK)
-    score_rect = score_text.get_rect(center=(SCREEN_WIDTH // 2, box_y + 160))
-    screen.blit(score_text, score_rect)
-    
-    restart_font = pygame.font.SysFont('Arial', 28)
-    restart_text = restart_font.render("Tekan SPACE untuk memulai kembali", True, BLACK)
-    restart_rect = restart_text.get_rect(center=(SCREEN_WIDTH // 2, box_y + 250))
-    screen.blit(restart_text, restart_rect)
-
-# Fungsi untuk menampilkan achievement
-def show_achievement(screen, achievement):
-    # Gambar background
-    overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
-    overlay.fill((0, 0, 0, 100))
-    screen.blit(overlay, (0, 0))
-    
-    # Gambar kotak achievement
-    box_width = 600
-    box_height = 200
-    box_x = (SCREEN_WIDTH - box_width) // 2
-    box_y = 100
-    
-    pygame.draw.rect(screen, WHITE, (box_x, box_y, box_width, box_height), border_radius=15)
-    pygame.draw.rect(screen, YELLOW, (box_x, box_y, box_width, box_height), 3, border_radius=15)
-    
-    # Gambar teks
-    title_font = pygame.font.SysFont('Arial', 32, bold=True)
-    title_text = title_font.render("ACHIEVEMENT UNLOCKED!", True, YELLOW)
-    title_rect = title_text.get_rect(center=(SCREEN_WIDTH // 2, box_y + 50))
-    screen.blit(title_text, title_rect)
-    
-    name_font = pygame.font.SysFont('Arial', 28, bold=True)
-    name_text = name_font.render(achievement.name, True, BLACK)
-    name_rect = name_text.get_rect(center=(SCREEN_WIDTH // 2, box_y + 100))
-    screen.blit(name_text, name_rect)
-    
-    desc_font = pygame.font.SysFont('Arial', 22)
-    desc_text = desc_font.render(achievement.description, True, BLACK)
-    desc_rect = desc_text.get_rect(center=(SCREEN_WIDTH // 2, box_y + 150))
-    screen.blit(desc_text, desc_rect)
-
-# Fungsi untuk menampilkan HUD
-def draw_hud(screen, player, score):
-    # Gambar background HUD
-    pygame.draw.rect(screen, (0, 0, 0, 150), (10, 10, 300, 80), border_radius=10)
-    
-    # Gambar skor
-    score_font = pygame.font.SysFont('Arial', 28, bold=True)
-    score_text = score_font.render(f"Skor: {score}", True, WHITE)
-    screen.blit(score_text, (20, 20))
-    
-    # Gambar nyawa
-    life_font = pygame.font.SysFont('Arial', 24)
-    life_text = life_font.render("Nyawa: ", True, WHITE)
-    screen.blit(life_text, (20, 55))
-    
-    # Gambar ikon nyawa
-    for i in range(player.lives):
-        heart_x = 90 + i * 30
-        heart_y = 60
-        # Gambar hati
-        pygame.draw.circle(screen, RED, (heart_x, heart_y), 8)
-        pygame.draw.circle(screen, RED, (heart_x + 10, heart_y), 8)
-        pygame.draw.polygon(screen, RED, [(heart_x - 8, heart_y + 3), 
-                                         (heart_x + 18, heart_y + 3), 
-                                         (heart_x + 5, heart_y + 15)])
-
-# Fungsi utama game
-def main():
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    pygame.display.set_caption("Petualangan Lalu Lintas - Belajar Rambu Lalu Lintas")
-    clock = pygame.time.Clock()
-    
-    # Buat objek game
-    player = Player(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 150)
-    
-    # Buat kendaraan
-    vehicles = [
-        # Jalan horizontal utama
-        Vehicle(100, SCREEN_HEIGHT//2 + 30, Direction.RIGHT, RED, 2, "car"),
-        Vehicle(300, SCREEN_HEIGHT//2 + 30, Direction.RIGHT, BLUE, 3, "car"),
-        Vehicle(500, SCREEN_HEIGHT//2 + 30, Direction.RIGHT, GREEN, 2.5, "car"),
-        Vehicle(700, SCREEN_HEIGHT//2 + 30, Direction.RIGHT, YELLOW, 2, "car"),
-        Vehicle(900, SCREEN_HEIGHT//2 + 30, Direction.RIGHT, (255, 0, 255), 2.5, "car"),
-        Vehicle(1100, SCREEN_HEIGHT//2 + 30, Direction.RIGHT, (0, 128, 128), 3, "car"),
-        Vehicle(200, SCREEN_HEIGHT//2 - 30, Direction.LEFT, ORANGE, 2.5, "car"),
-        Vehicle(400, SCREEN_HEIGHT//2 - 30, Direction.LEFT, (0, 255, 255), 3, "car"),
-        Vehicle(600, SCREEN_HEIGHT//2 - 30, Direction.LEFT, (255, 165, 0), 2, "car"),
-        Vehicle(800, SCREEN_HEIGHT//2 - 30, Direction.LEFT, (128, 0, 128), 2.5, "car"),
-        Vehicle(1000, SCREEN_HEIGHT//2 - 30, Direction.LEFT, (0, 128, 128), 3, "car"),
-        Vehicle(1200, SCREEN_HEIGHT//2 - 30, Direction.LEFT, (128, 128, 0), 2.2, "car"),
+    def init_sequence_puzzle(self):
+        # Slot untuk urutan
+        self.sequence_slots = []
+        slot_width = 150
+        slot_height = 180
+        start_x = (SCREEN_WIDTH - (4 * slot_width + 3 * 30)) // 2
+        start_y = 200
         
-        # Truk di jalan horizontal utama
-        Vehicle(150, SCREEN_HEIGHT//2 + 30, Direction.RIGHT, (100, 100, 100), 1.5, "truck"),
-        Vehicle(650, SCREEN_HEIGHT//2 - 30, Direction.LEFT, (120, 120, 120), 1.8, "truck"),
+        for i in range(4):
+            x = start_x + i * (slot_width + 30)
+            self.sequence_slots.append(SequenceSlot(x, start_y, slot_width, slot_height, i))
+            
+        # Kartu urutan
+        self.sequence_cards = [
+            SequenceCard(150, 450, 140, 140, "Lebah Terbang ke Bunga", "bee", 1),
+            SequenceCard(320, 450, 140, 140, "Lebah Mengumpulkan Nektar", "flower", 2),
+            SequenceCard(490, 450, 140, 140, "Lebah Kembali ke Sarang", "hive", 3),
+            SequenceCard(660, 450, 140, 140, "Nektar Diolah Menjadi Madu", "honey", 4)
+        ]
         
-        # Jalan horizontal kedua (atas)
-        Vehicle(100, SCREEN_HEIGHT//4 + 20, Direction.RIGHT, (200, 100, 0), 2.2, "car"),
-        Vehicle(400, SCREEN_HEIGHT//4 + 20, Direction.RIGHT, (0, 100, 200), 2.8, "car"),
-        Vehicle(700, SCREEN_HEIGHT//4 + 20, Direction.RIGHT, (100, 200, 0), 2.5, "car"),
-        Vehicle(1000, SCREEN_HEIGHT//4 + 20, Direction.RIGHT, (200, 0, 100), 2.2, "car"),
-        Vehicle(200, SCREEN_HEIGHT//4 - 20, Direction.LEFT, (100, 0, 200), 2.5, "car"),
-        Vehicle(500, SCREEN_HEIGHT//4 - 20, Direction.LEFT, (0, 200, 100), 2.8, "car"),
-        Vehicle(800, SCREEN_HEIGHT//4 - 20, Direction.LEFT, (200, 100, 0), 2.2, "car"),
-        Vehicle(1100, SCREEN_HEIGHT//4 - 20, Direction.LEFT, (100, 200, 0), 2.5, "car"),
+        # Lebah untuk animasi
+        self.bee = Bee(100, 300)
         
-        # Jalan horizontal ketiga (bawah)
-        Vehicle(150, 3*SCREEN_HEIGHT//4 + 20, Direction.RIGHT, (0, 100, 200), 2.5, "car"),
-        Vehicle(450, 3*SCREEN_HEIGHT//4 + 20, Direction.RIGHT, (200, 0, 100), 2.2, "car"),
-        Vehicle(750, 3*SCREEN_HEIGHT//4 + 20, Direction.RIGHT, (100, 200, 0), 2.8, "car"),
-        Vehicle(1050, 3*SCREEN_HEIGHT//4 + 20, Direction.RIGHT, (200, 100, 0), 2.5, "car"),
-        Vehicle(250, 3*SCREEN_HEIGHT//4 - 20, Direction.LEFT, (100, 0, 200), 2.2, "car"),
-        Vehicle(550, 3*SCREEN_HEIGHT//4 - 20, Direction.LEFT, (0, 200, 100), 2.8, "car"),
-        Vehicle(850, 3*SCREEN_HEIGHT//4 - 20, Direction.LEFT, (200, 100, 0), 2.5, "car"),
-        Vehicle(1150, 3*SCREEN_HEIGHT//4 - 20, Direction.LEFT, (100, 200, 0), 2.2, "car"),
+        # Status game
+        self.sequence_puzzle_complete = False
+        self.sequence_animation_active = False
+        self.animation_step = 0
         
-        # Jalan vertikal utama
-        Vehicle(SCREEN_WIDTH//2 + 30, 100, Direction.DOWN, (200, 100, 0), 2, "car"),
-        Vehicle(SCREEN_WIDTH//2 - 30, 300, Direction.UP, (0, 100, 200), 2.5, "car"),
-        Vehicle(SCREEN_WIDTH//2 + 30, 500, Direction.DOWN, (100, 200, 0), 2.2, "car"),
-        Vehicle(SCREEN_WIDTH//2 - 30, 700, Direction.UP, (200, 0, 100), 2.8, "car"),
+    def handle_events(self):
+        mouse_pos = pygame.mouse.get_pos()
         
-        # Jalan vertikal kedua (kiri)
-        Vehicle(SCREEN_WIDTH//4 + 20, 150, Direction.DOWN, (100, 0, 200), 2.5, "car"),
-        Vehicle(SCREEN_WIDTH//4 - 20, 350, Direction.UP, (0, 200, 100), 2.2, "car"),
-        Vehicle(SCREEN_WIDTH//4 + 20, 550, Direction.DOWN, (200, 100, 0), 2.8, "car"),
-        Vehicle(SCREEN_WIDTH//4 - 20, 750, Direction.UP, (100, 200, 0), 2.5, "car"),
-        
-        # Jalan vertikal ketiga (kanan)
-        Vehicle(3*SCREEN_WIDTH//4 + 20, 200, Direction.DOWN, (0, 200, 100), 2.2, "car"),
-        Vehicle(3*SCREEN_WIDTH//4 - 20, 400, Direction.UP, (200, 100, 0), 2.8, "car"),
-        Vehicle(3*SCREEN_WIDTH//4 + 20, 600, Direction.DOWN, (100, 0, 200), 2.5, "car"),
-        Vehicle(3*SCREEN_WIDTH//4 - 20, 800, Direction.UP, (0, 100, 200), 2.2, "car")
-    ]
-    
-    # Buat lampu lalu lintas
-    traffic_lights = [
-        # Persimpangan utama
-        TrafficLight(300, SCREEN_HEIGHT//2 - 120),
-        TrafficLight(700, SCREEN_HEIGHT//2 - 120),
-        TrafficLight(SCREEN_WIDTH//2 - 120, 300),
-        TrafficLight(SCREEN_WIDTH//2 + 120, 500),
-        
-        # Persimpangan atas
-        TrafficLight(300, SCREEN_HEIGHT//4 - 80),
-        TrafficLight(700, SCREEN_HEIGHT//4 - 80),
-        TrafficLight(SCREEN_WIDTH//2 - 120, 150),
-        TrafficLight(SCREEN_WIDTH//2 + 120, 250),
-        
-        # Persimpangan bawah
-        TrafficLight(300, 3*SCREEN_HEIGHT//4 - 80),
-        TrafficLight(700, 3*SCREEN_HEIGHT//4 - 80),
-        TrafficLight(SCREEN_WIDTH//2 - 120, 550),
-        TrafficLight(SCREEN_WIDTH//2 + 120, 650),
-        
-        # Persimpangan kiri
-        TrafficLight(SCREEN_WIDTH//4 - 80, 300),
-        TrafficLight(SCREEN_WIDTH//4 - 80, 500),
-        TrafficLight(150, SCREEN_HEIGHT//2 - 120),
-        TrafficLight(250, SCREEN_HEIGHT//2 + 40),
-        
-        # Persimpangan kanan
-        TrafficLight(3*SCREEN_WIDTH//4 - 80, 300),
-        TrafficLight(3*SCREEN_WIDTH//4 - 80, 500),
-        TrafficLight(1050, SCREEN_HEIGHT//2 - 120),
-        TrafficLight(1150, SCREEN_HEIGHT//2 + 40)
-    ]
-    
-    # Buat misi
-    missions = [
-        # Misi di persimpangan utama
-        Mission(200, SCREEN_HEIGHT//2 - 180, MissionType.QUESTION, 
-                "Apa arti lampu lalu lintas berwarna merah?", "Berhenti"),
-        Mission(500, SCREEN_HEIGHT//2 - 180, MissionType.ACTION, 
-                None, None, "Berhenti saat lampu merah"),
-        Mission(800, SCREEN_HEIGHT//2 - 180, MissionType.TREASURE),
-        Mission(300, SCREEN_HEIGHT//2 + 180, MissionType.QUESTION, 
-                "Apa arti rambu berbentuk segitiga dengan warna merah?", "Peringatan"),
-        Mission(700, SCREEN_HEIGHT//2 + 180, MissionType.ACTION, 
-                None, None, "Jalan saat lampu hijau"),
-        
-        # Misi di persimpangan atas
-        Mission(200, SCREEN_HEIGHT//4 - 120, MissionType.QUESTION, 
-                "Apa arti rambu berbentuk lingkaran dengan warna merah dan garis diagonal?", "Dilarang"),
-        Mission(500, SCREEN_HEIGHT//4 - 120, MissionType.ACTION, 
-                None, None, "Berhati-hati di zebra cross"),
-        Mission(800, SCREEN_HEIGHT//4 - 120, MissionType.TREASURE),
-        Mission(300, SCREEN_HEIGHT//4 + 80, MissionType.QUESTION, 
-                "Apa arti rambu berbentuk segi empat dengan warna biru?", "Kewajiban"),
-        Mission(700, SCREEN_HEIGHT//4 + 80, MissionType.ACTION, 
-                None, None, "Prioritaskan pejalan kaki"),
-        
-        # Misi di persimpangan bawah
-        Mission(200, 3*SCREEN_HEIGHT//4 - 120, MissionType.QUESTION, 
-                "Apa yang harus dilakukan saat melihat rambu berhenti?", "Berhenti total"),
-        Mission(500, 3*SCREEN_HEIGHT//4 - 120, MissionType.ACTION, 
-                None, None, "Lihat ke kiri dan kanan"),
-        Mission(800, 3*SCREEN_HEIGHT//4 - 120, MissionType.TREASURE),
-        Mission(300, 3*SCREEN_HEIGHT//4 + 80, MissionType.QUESTION, 
-                "Apa arti rambu dengan gambar anak menyeberang?", "Penyeberangan pejalan kaki"),
-        Mission(700, 3*SCREEN_HEIGHT//4 + 80, MissionType.ACTION, 
-                None, None, "Berjalan di trotoar"),
-        
-        # Misi di persimpangan kiri
-        Mission(SCREEN_WIDTH//4 - 120, 200, MissionType.QUESTION, 
-                "Apa arti rambu dengan gambar sepeda?", "Lintasan sepeda"),
-        Mission(SCREEN_WIDTH//4 - 120, 400, MissionType.ACTION, 
-                None, None, "Hati-hati dengan sepeda"),
-        Mission(SCREEN_WIDTH//4 - 120, 600, MissionType.TREASURE),
-        
-        # Misi di persimpangan kanan
-        Mission(3*SCREEN_WIDTH//4 - 120, 200, MissionType.QUESTION, 
-                "Apa arti rambu dengan gambar orang berjalan?", "Hanya untuk pejalan kaki"),
-        Mission(3*SCREEN_WIDTH//4 - 120, 400, MissionType.ACTION, 
-                None, None, "Jangan berjalan di jalan raya"),
-        Mission(3*SCREEN_WIDTH//4 - 120, 600, MissionType.TREASURE),
-        
-        # Misi tambahan di area terbuka
-        Mission(SCREEN_WIDTH//4, SCREEN_HEIGHT//4, MissionType.QUESTION, 
-                "Apa yang harus dilakukan sebelum menyeberang jalan?", "Lihat kiri kanan kiri lagi"),
-        Mission(3*SCREEN_WIDTH//4, SCREEN_HEIGHT//4, MissionType.ACTION, 
-                None, None, "Tunggu sampai aman"),
-        Mission(SCREEN_WIDTH//4, 3*SCREEN_HEIGHT//4, MissionType.TREASURE),
-        Mission(3*SCREEN_WIDTH//4, 3*SCREEN_HEIGHT//4, MissionType.QUESTION, 
-                "Mengapa kita harus mematuhi rambu lalu lintas?", "Untuk keselamatan")
-    ]
-    
-    # Buat mini map
-    minimap = MiniMap(SCREEN_WIDTH - 200, 20, 180, 140)
-    
-    # Buat achievement
-    achievements = [
-        Achievement("Pemula", "Dapatkan skor 100 poin", "score_100"),
-        Achievement("Ahli Lalu Lintas", "Dapatkan skor 200 poin", "score_200"),
-        Achievement("Petualang Sejati", "Selesaikan semua misi", "all_missions"),
-        Achievement("Pemburu Aman", "Selesaikan 5 misi tanpa terkena tabrakan", "no_hit")
-    ]
-    
-    # Variabel game
-    running = True
-    game_state = GameState.PLAYING
-    current_mission = None
-    dialog_active = False
-    dialog_title = ""
-    dialog_message = ""
-    dialog_options = []
-    score = 0
-    font = pygame.font.SysFont('Arial', 24)
-    
-    # Timer untuk dialog "Berhasil!"
-    success_dialog_timer = 0
-    
-    # Timer untuk dialog "Harta Karun Ditemukan!"
-    treasure_dialog_timer = 0
-    
-    # Timer untuk achievement
-    achievement_timer = 0
-    current_achievement = None
-    achievement_queue = []  # Queue untuk achievement yang akan ditampilkan
-    
-    while running:
-        # Event handling
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
-            elif event.type == pygame.KEYDOWN:
-                if game_state == GameState.GAME_OVER:
-                    if event.key == pygame.K_SPACE:
-                        # Reset game
-                        player = Player(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 150)
-                        score = 0
-                        game_state = GameState.PLAYING
-                        for mission in missions:
-                            mission.completed = False
-                        for achievement in achievements:
-                            achievement.unlocked = False
-                        achievement_queue = []
-                        success_dialog_timer = 0
-                        treasure_dialog_timer = 0
-                elif dialog_active:
-                    # Tangani input dialog
-                    if event.key >= pygame.K_1 and event.key <= pygame.K_9:
-                        option_index = event.key - pygame.K_1
-                        if option_index < len(dialog_options):
-                            if current_mission and current_mission.mission_type == MissionType.QUESTION:
-                                if dialog_options[option_index] == current_mission.answer:
-                                    score += 10
-                                    current_mission.completed = True
-                                    dialog_title = "Jawaban Benar!"
-                                    dialog_message = "Kamu mendapat 10 poin."
-                                else:
-                                    dialog_title = "Jawaban Salah"
-                                    dialog_message = "Coba lagi lain kali."
-                            dialog_active = False
-                    elif event.key == pygame.K_ESCAPE:
-                        dialog_active = False
-        
-        # Update game state
-        if game_state == GameState.PLAYING:
-            # Keyboard input untuk gerakan pemain
-            if not dialog_active:
-                keys = pygame.key.get_pressed()
-                dx = dy = 0
-                if keys[pygame.K_LEFT]:
-                    dx = -1
-                if keys[pygame.K_RIGHT]:
-                    dx = 1
-                if keys[pygame.K_UP]:
-                    dy = -1
-                if keys[pygame.K_DOWN]:
-                    dy = 1
-                player.move(dx, dy)
-            
-            # Update game objects
-            player.update()
-            
-            for vehicle in vehicles:
-                vehicle.update()
-            
-            for light in traffic_lights:
-                light.update()
+                self.running = False
                 
-            for mission in missions:
-                mission.update()
-            
-            # Cek tabrakan dengan kendaraan
-            if not player.invulnerable:
-                for vehicle in vehicles:
-                    # Cek apakah pemain berada di area yang sama dengan kendaraan
-                    if (abs(player.x - vehicle.x - vehicle.width/2) < (player.width/2 + vehicle.width/2) and
-                        abs(player.y - vehicle.y - vehicle.height/2) < (player.height/2 + vehicle.height/2)):
-                        player.hit()
-                        if player.lives <= 0:
-                            game_state = GameState.GAME_OVER
-            
-            # Cek interaksi dengan misi
-            if not dialog_active:
-                for mission in missions:
-                    if not mission.completed:
-                        distance = math.sqrt((player.x - mission.x)**2 + (player.y - mission.y)**2)
-                        if distance < 50:
-                            current_mission = mission
-                            mission.active = True
+            # Menu state
+            if self.state == "MENU":
+                for button in self.menu_buttons:
+                    button.check_hover(mouse_pos)
+                    if button.is_clicked(mouse_pos, event):
+                        if button.text == "Petak Rumpang Logika":
+                            self.state = "LOGIC_PUZZLE"
+                            self.reset_logic_puzzle()
+                        elif button.text == "Rantai Pembuatan Madu":
+                            self.state = "SEQUENCE_PUZZLE"
+                            self.reset_sequence_puzzle()
+                        elif button.text == "Keluar":
+                            self.running = False
                             
-                            if mission.mission_type == MissionType.QUESTION:
-                                dialog_title = "Pertanyaan"
-                                dialog_message = mission.question
-                                dialog_options = [mission.answer, "Jalan terus", "Lambat", "Cepat"]
-                                random.shuffle(dialog_options)
-                                dialog_active = True
-                            elif mission.mission_type == MissionType.ACTION:
-                                # Cek apakah pemain melakukan aksi yang benar
-                                light_nearby = False
-                                for light in traffic_lights:
-                                    light_distance = math.sqrt((player.x - light.x)**2 + (player.y - light.y)**2)
-                                    if light_distance < 100:
-                                        light_nearby = True
-                                        if light.state == TrafficLightState.RED and not player.is_moving:
-                                            score += 15
-                                            mission.completed = True
-                                            dialog_title = "Berhasil!"
-                                            dialog_message = "Kamu berhenti dengan benar saat lampu merah. Dapat 15 poin!"
-                                            dialog_active = True
-                                            success_dialog_timer = 120  # 2 detik untuk dialog berhasil
-                                        elif light.state == TrafficLightState.GREEN and player.is_moving:
-                                            score += 15
-                                            mission.completed = True
-                                            dialog_title = "Berhasil!"
-                                            dialog_message = "Kamu jalan dengan benar saat lampu hijau. Dapat 15 poin!"
-                                            dialog_active = True
-                                            success_dialog_timer = 120  # 2 detik untuk dialog berhasil
-                                        break
-                                
-                                if not light_nearby:
-                                    dialog_title = "Aksi"
-                                    dialog_message = "Pergilah ke lampu lalu lintas dan lakukan aksi yang benar!"
-                                    dialog_active = True
-                            elif mission.mission_type == MissionType.TREASURE:
-                                score += 20
-                                if player.lives < 3:
-                                    player.lives += 1
-                                    dialog_title = "Harta Karun Ditemukan!"
-                                    dialog_message = "Kamu menemukan harta karun! Dapat 20 poin dan 1 nyawa tambahan!"
-                                else:
-                                    dialog_title = "Harta Karun Ditemukan!"
-                                    dialog_message = "Kamu menemukan harta karun! Dapat 20 poin!"
-                                mission.completed = True
-                                dialog_active = True
-                                treasure_dialog_timer = 120  # 2 detik untuk dialog harta karun
+            # Logic Puzzle state
+            elif self.state == "LOGIC_PUZZLE":
+                self.back_button.check_hover(mouse_pos)
+                self.check_button.check_hover(mouse_pos)
+                self.reset_button.check_hover(mouse_pos)
+                
+                if self.back_button.is_clicked(mouse_pos, event):
+                    self.state = "MENU"
+                elif self.check_button.is_clicked(mouse_pos, event):
+                    self.check_logic_puzzle()
+                elif self.reset_button.is_clicked(mouse_pos, event):
+                    self.reset_logic_puzzle()
+                    
+                # Drag and drop cards
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    for card in self.cards:
+                        if card.check_drag(mouse_pos) and not card.placed:
+                            card.start_drag(mouse_pos)
                             break
+                            
+                elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                    for card in self.cards:
+                        if card.dragging:
+                            card.stop_drag()
+                            # Cek apakah kartu diletakkan di petak
+                            placed = False
+                            for plot in self.plots:
+                                if plot.rect.collidepoint(card.rect.center):
+                                    if plot.place_card(card):
+                                        placed = True
+                                        break
+                            # Jika tidak diletakkan di petak, kembalikan ke posisi semula
+                            if not placed:
+                                card.reset_position()
+                            break
+                            
+            # Sequence Puzzle state
+            elif self.state == "SEQUENCE_PUZZLE":
+                self.back_button.check_hover(mouse_pos)
+                self.check_button.check_hover(mouse_pos)
+                self.reset_button.check_hover(mouse_pos)
+                
+                if self.back_button.is_clicked(mouse_pos, event):
+                    self.state = "MENU"
+                elif self.check_button.is_clicked(mouse_pos, event):
+                    self.check_sequence_puzzle()
+                elif self.reset_button.is_clicked(mouse_pos, event):
+                    self.reset_sequence_puzzle()
+                    
+                # Drag and drop cards
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    for card in self.sequence_cards:
+                        if card.check_drag(mouse_pos) and not card.placed:
+                            card.start_drag(mouse_pos)
+                            break
+                            
+                elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                    for card in self.sequence_cards:
+                        if card.dragging:
+                            card.stop_drag()
+                            # Cek apakah kartu diletakkan di slot
+                            placed = False
+                            for slot in self.sequence_slots:
+                                if slot.rect.collidepoint(card.rect.center):
+                                    if slot.place_card(card):
+                                        placed = True
+                                        break
+                            # Jika tidak diletakkan di slot, kembalikan ke posisi semula
+                            if not placed:
+                                card.reset_position()
+                            break
+                            
+            # Win/Lose state
+            elif self.state in ["WIN", "LOSE"]:
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        self.state = "MENU"
+                    elif event.key == pygame.K_ESCAPE:
+                        self.state = "MENU"
+                        
+        # Handle mouse motion for dragging
+        if self.state == "LOGIC_PUZZLE":
+            for card in self.cards:
+                if card.dragging:
+                    card.update_position(mouse_pos)
+                    
+        elif self.state == "SEQUENCE_PUZZLE":
+            for card in self.sequence_cards:
+                if card.dragging:
+                    card.update_position(mouse_pos)
+                    
+    def update(self):
+        # Update feedback timer
+        if self.feedback_timer > 0:
+            self.feedback_timer -= 1
             
-            # Cek achievement
-            missions_completed = sum(1 for mission in missions if mission.completed)
-            for achievement in achievements:
-                if achievement.check_unlock(score, player.lives, missions_completed):
-                    # Tambahkan achievement ke queue
-                    if achievement not in achievement_queue:
-                        achievement_queue.append(achievement)
+        # Update animasi sequence puzzle
+        if self.state == "SEQUENCE_PUZZLE" and self.sequence_animation_active:
+            self.bee.update()
             
-            # Jika tidak ada achievement yang sedang ditampilkan dan ada achievement di queue
-            if current_achievement is None and achievement_queue and achievement_timer <= 0:
-                current_achievement = achievement_queue.pop(0)
-                achievement_timer = 180  # 3 detik
+            # Cek apakah lebah sudah mencapai target
+            if not self.bee.moving:
+                self.animation_step += 1
+                
+                # Lanjutkan ke langkah berikutnya
+                if self.animation_step == 1:
+                    # Langkah 2: Lebah mengumpulkan nektar
+                    self.bee.move_to(500, 300)
+                elif self.animation_step == 2:
+                    # Langkah 3: Lebah kembali ke sarang
+                    self.bee.move_to(100, 300)
+                elif self.animation_step == 3:
+                    # Langkah 4: Nektar diolah menjadi madu
+                    self.sequence_animation_active = False
+                    self.state = "WIN"
+                    self.score += 100
+                    
+    def draw(self):
+        self.screen.fill(WHITE)
         
-        # Update timer dialog "Berhasil!"
-        if success_dialog_timer > 0:
-            success_dialog_timer -= 1
-            if success_dialog_timer <= 0:
-                dialog_active = False
-        
-        # Update timer dialog "Harta Karun Ditemukan!"
-        if treasure_dialog_timer > 0:
-            treasure_dialog_timer -= 1
-            if treasure_dialog_timer <= 0:
-                dialog_active = False
-        
-        # Update achievement timer
-        if achievement_timer > 0:
-            achievement_timer -= 1
-            if achievement_timer <= 0:
-                current_achievement = None
-        
-        # Drawing
-        draw_background(screen)
-        draw_road(screen)
-        
-        # Gambar lampu lalu lintas
-        for light in traffic_lights:
-            light.draw(screen)
-        
-        # Gambar kendaraan
-        for vehicle in vehicles:
-            vehicle.draw(screen)
-        
-        # Gambar misi
-        for mission in missions:
-            mission.draw(screen)
-        
-        # Gambar pemain
-        player.draw(screen)
-        
-        # Gambar mini map
-        minimap.draw(screen, player, missions, traffic_lights)
-        
-        # Gambar HUD
-        draw_hud(screen, player, score)
-        
-        # Gambar judul game
-        title_font = pygame.font.SysFont('Arial', 36, bold=True)
-        title_text = title_font.render("Petualangan Lalu Lintas", True, BLACK)
-        title_rect = title_text.get_rect(center=(SCREEN_WIDTH // 2, 40))
-        screen.blit(title_text, title_rect)
-        
-        # Gambar instruksi
-        instruction_font = pygame.font.SysFont('Arial', 20)
-        instructions = [
-            "Gunakan tombol panah untuk bergerak",
-            "Kunjungi tanda !, ?, dan kotak coklat untuk misi",
-            "Pelajari rambu lalu lintas dan dapatkan poin!",
-            "Hati-hati dengan kendaraan!"
-        ]
-        
-        for i, instruction in enumerate(instructions):
-            inst_text = instruction_font.render(instruction, True, BLACK)
-            screen.blit(inst_text, (20, SCREEN_HEIGHT - 100 + i * 25))
-        
-        # Gambar dialog jika aktif
-        if dialog_active:
-            show_dialog(screen, dialog_title, dialog_message, dialog_options)
-        
-        # Gambar game over
-        if game_state == GameState.GAME_OVER:
-            show_game_over(screen, score)
-        
-        # Gambar achievement
-        if current_achievement:
-            show_achievement(screen, current_achievement)
-        
+        # Menu state
+        if self.state == "MENU":
+            self.draw_menu()
+            
+        # Logic Puzzle state
+        elif self.state == "LOGIC_PUZZLE":
+            self.draw_logic_puzzle()
+            
+        # Sequence Puzzle state
+        elif self.state == "SEQUENCE_PUZZLE":
+            self.draw_sequence_puzzle()
+            
+        # Win/Lose state
+        elif self.state == "WIN":
+            self.draw_win_screen()
+        elif self.state == "LOSE":
+            self.draw_lose_screen()
+            
         pygame.display.flip()
-        clock.tick(FPS)
-    
-    pygame.quit()
-    sys.exit()
+        
+    def draw_menu(self):
+        # Judul
+        title = font_large.render("Bee Literate: Logic Garden", True, BLACK)
+        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 100))
+        self.screen.blit(title, title_rect)
+        
+        # Subjudul
+        subtitle = font_medium.render("Game Edukatif Critical Thinking & Problem Solving", True, BLACK)
+        subtitle_rect = subtitle.get_rect(center=(SCREEN_WIDTH // 2, 150))
+        self.screen.blit(subtitle, subtitle_rect)
+        
+        # Tombol
+        for button in self.menu_buttons:
+            button.draw(self.screen)
+            
+        # Skor
+        score_text = font_medium.render(f"Skor: {self.score}", True, BLACK)
+        self.screen.blit(score_text, (20, 20))
+        
+    def draw_logic_puzzle(self):
+        # Judul
+        title = font_large.render("Petak Rumpang Logika", True, BLACK)
+        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 50))
+        self.screen.blit(title, title_rect)
+        
+        # Petunjuk
+        instruction = font_medium.render("Letakkan kartu yang sesuai dengan aturan di setiap petak!", True, BLACK)
+        instruction_rect = instruction.get_rect(center=(SCREEN_WIDTH // 2, 100))
+        self.screen.blit(instruction, instruction_rect)
+        
+        # Gambar petak
+        for plot in self.plots:
+            plot.draw(self.screen)
+            
+        # Gambar kartu
+        for card in self.cards:
+            if not card.placed:
+                card.draw(self.screen)
+                
+        # Tombol
+        self.back_button.draw(self.screen)
+        self.check_button.draw(self.screen)
+        self.reset_button.draw(self.screen)
+        
+        # Feedback
+        if self.feedback_timer > 0:
+            feedback_surf = font_medium.render(self.feedback_text, True, BLACK)
+            feedback_rect = feedback_surf.get_rect(center=(SCREEN_WIDTH // 2, 650))
+            pygame.draw.rect(self.screen, YELLOW, feedback_rect.inflate(20, 10))
+            pygame.draw.rect(self.screen, BLACK, feedback_rect.inflate(20, 10), 2)
+            self.screen.blit(feedback_surf, feedback_rect)
+            
+    def draw_sequence_puzzle(self):
+        # Judul
+        title = font_large.render("Rantai Pembuatan Madu", True, BLACK)
+        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 50))
+        self.screen.blit(title, title_rect)
+        
+        # Petunjuk
+        instruction = font_medium.render("Susun kartu dalam urutan yang benar!", True, BLACK)
+        instruction_rect = instruction.get_rect(center=(SCREEN_WIDTH // 2, 100))
+        self.screen.blit(instruction, instruction_rect)
+        
+        # Gambar slot
+        for slot in self.sequence_slots:
+            slot.draw(self.screen)
+            
+        # Gambar kartu
+        for card in self.sequence_cards:
+            if not card.placed:
+                card.draw(self.screen)
+                
+        # Gambar lebah jika animasi aktif
+        if self.sequence_animation_active:
+            self.bee.draw(self.screen)
+            
+        # Tombol
+        self.back_button.draw(self.screen)
+        self.check_button.draw(self.screen)
+        self.reset_button.draw(self.screen)
+        
+        # Feedback
+        if self.feedback_timer > 0:
+            feedback_surf = font_medium.render(self.feedback_text, True, BLACK)
+            feedback_rect = feedback_surf.get_rect(center=(SCREEN_WIDTH // 2, 650))
+            pygame.draw.rect(self.screen, YELLOW, feedback_rect.inflate(20, 10))
+            pygame.draw.rect(self.screen, BLACK, feedback_rect.inflate(20, 10), 2)
+            self.screen.blit(feedback_surf, feedback_rect)
+            
+    def draw_win_screen(self):
+        # Latar belakang
+        win_surf = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+        win_surf.fill((0, 255, 0, 128))
+        self.screen.blit(win_surf, (0, 0))
+        
+        # Teks menang
+        win_text = font_large.render("Tantangan Selesai!", True, BLACK)
+        win_rect = win_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50))
+        self.screen.blit(win_text, win_rect)
+        
+        # Skor
+        score_text = font_medium.render(f"Skor: {self.score}", True, BLACK)
+        score_rect = score_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
+        self.screen.blit(score_text, score_rect)
+        
+        # Petunjuk
+        hint_text = font_medium.render("Tekan SPACE atau ESC untuk kembali ke menu", True, BLACK)
+        hint_rect = hint_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50))
+        self.screen.blit(hint_text, hint_rect)
+        
+    def draw_lose_screen(self):
+        # Latar belakang
+        lose_surf = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+        lose_surf.fill((255, 0, 0, 128))
+        self.screen.blit(lose_surf, (0, 0))
+        
+        # Teks kalah
+        lose_text = font_large.render("Coba Lagi!", True, WHITE)
+        lose_rect = lose_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50))
+        self.screen.blit(lose_text, lose_rect)
+        
+        # Skor
+        score_text = font_medium.render(f"Skor: {self.score}", True, WHITE)
+        score_rect = score_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
+        self.screen.blit(score_text, score_rect)
+        
+        # Petunjuk
+        hint_text = font_medium.render("Tekan SPACE atau ESC untuk kembali ke menu", True, WHITE)
+        hint_rect = hint_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50))
+        self.screen.blit(hint_text, hint_rect)
+        
+    def check_logic_puzzle(self):
+        # Periksa semua petak
+        all_correct = True
+        
+        for plot in self.plots:
+            if plot.occupied:
+                if not plot.check_card(plot.card):
+                    all_correct = False
+            else:
+                all_correct = False
+                
+        if all_correct:
+            self.feedback_text = "Semua petak terisi dengan benar!"
+            self.feedback_timer = 120
+            self.logic_puzzle_complete = True
+            self.state = "WIN"
+            self.score += 100
+        else:
+            self.feedback_text = "Beberapa petak masih salah atau kosong!"
+            self.feedback_timer = 120
+            
+    def check_sequence_puzzle(self):
+        # Periksa apakah semua slot terisi
+        all_filled = all(slot.occupied for slot in self.sequence_slots)
+        
+        if not all_filled:
+            self.feedback_text = "Isi semua slot terlebih dahulu!"
+            self.feedback_timer = 120
+            return
+            
+        # Periksa urutan yang benar
+        correct_order = True
+        for i, slot in enumerate(self.sequence_slots):
+            if slot.card.step_number != i + 1:
+                correct_order = False
+                slot.correct = False
+            else:
+                slot.correct = True
+                
+        if correct_order:
+            self.feedback_text = "Urutan benar! Menjalankan animasi..."
+            self.feedback_timer = 120
+            self.sequence_puzzle_complete = True
+            self.sequence_animation_active = True
+            self.animation_step = 0
+            self.bee.move_to(500, 300)  # Mulai animasi dengan lebah terbang ke bunga
+        else:
+            self.feedback_text = "Urutan masih salah! Perhatikan langkah-langkahnya."
+            self.feedback_timer = 120
+            
+    def reset_logic_puzzle(self):
+        # Kembalikan semua kartu ke posisi semula
+        for card in self.cards:
+            card.reset_position()
+            card.error_feedback = None
+            
+        # Kosongkan semua petak
+        for plot in self.plots:
+            if plot.occupied:
+                plot.remove_card()
+                
+        # Reset status
+        self.logic_puzzle_complete = False
+        self.feedback_timer = 0
+        
+    def reset_sequence_puzzle(self):
+        # Kembalikan semua kartu ke posisi semula
+        for card in self.sequence_cards:
+            card.reset_position()
+            
+        # Kosongkan semua slot
+        for slot in self.sequence_slots:
+            if slot.occupied:
+                slot.remove_card()
+            slot.correct = False
+            
+        # Reset status
+        self.sequence_puzzle_complete = False
+        self.sequence_animation_active = False
+        self.feedback_timer = 0
+        
+        # Reset posisi lebah
+        self.bee = Bee(100, 300)
+        
+    def run(self):
+        while self.running:
+            self.handle_events()
+            self.update()
+            self.draw()
+            self.clock.tick(FPS)
+            
+        pygame.quit()
+        sys.exit()
 
 if __name__ == "__main__":
-    main()
+    game = Game()
+    game.run()
