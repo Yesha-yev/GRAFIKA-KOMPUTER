@@ -1,978 +1,1565 @@
 import pygame
-import sys
+import cairo
 import random
-import math
-import time
+import numpy as np
 
-# Inisialisasi Pygame
-pygame.init()
-
-# Konstanta
-SCREEN_WIDTH = 1200
-SCREEN_HEIGHT = 800
+# --- 1. KONSTANTA DAN INISIALISASI ---
+WIDTH, HEIGHT = 800, 600
 FPS = 60
+pygame.init()
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Sambung Kata & Hitung Cepat - Belajar Huruf & Angka")
+clock = pygame.time.Clock()
 
-# Warna
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-GRAY = (200, 200, 200)
-LIGHT_GRAY = (230, 230, 230)
-RED = (255, 50, 50)
-GREEN = (50, 255, 50)
-BLUE = (50, 50, 255)
-YELLOW = (255, 255, 50)
-PURPLE = (128, 0, 128)
-ORANGE = (255, 165, 0)
-CYAN = (0, 255, 255)
-PINK = (255, 192, 203)
-BROWN = (139, 69, 19)
-DARK_GREEN = (0, 100, 0)
+# Inisialisasi Cairo Surface
+data = np.zeros((HEIGHT, WIDTH, 4), dtype=np.uint8)
+# ARGB32 for cairo, but numpy data is BGRA by default due to how we treat it later
+# We will swap axes and channel order when blitting to Pygame screen
+cairo_surface = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_ARGB32, WIDTH, HEIGHT)
+context = cairo.Context(cairo_surface)
 
-# Font
-font_small = pygame.font.SysFont('Arial', 16)
-font_medium = pygame.font.SysFont('Arial', 24)
-font_large = pygame.font.SysFont('Arial', 32)
-font_xlarge = pygame.font.SysFont('Arial', 48)
+# --- 2. FUNGSI-FUNGSI GAMBAR (DRAW FUNCTIONS) ---
+
+# [Semua fungsi gambar yang sudah Anda buat (draw_apple, draw_ball, draw_cat, etc.) 
+# akan tetap berada di sini. Saya akan menyertakannya di kode akhir.]
+def draw_apple(context, x, y, size=1.0):
+    """Gambar apel"""
+    context.set_source_rgb(0.9, 0.2, 0.2)
+    context.arc(x, y, 25*size, 0, 2 * 3.14)
+    context.fill()
+    context.set_source_rgb(1, 0.4, 0.4)
+    context.arc(x - 8*size, y - 8*size, 10*size, 0, 2 * 3.14)
+    context.fill()
+    context.set_source_rgb(0.4, 0.2, 0.1)
+    context.rectangle(x - 2*size, y - 30*size, 4*size, 12*size)
+    context.fill()
+    context.set_source_rgb(0.2, 0.7, 0.2)
+    context.arc(x + 10*size, y - 25*size, 10*size, 0, 2 * 3.14)
+    context.fill()
+
+def draw_ball(context, x, y, size=1.0):
+    """Gambar bola"""
+    context.set_source_rgb(1, 0, 1)
+    context.arc(x, y, 25*size, 0, 2 * 3.14)
+    context.fill()
+    context.set_source_rgb(0, 0, 0)
+    context.set_line_width(2*size)
+    for i in range(6):
+        angle = i * 3.14 / 3
+        context.move_to(x, y)
+        context.line_to(x + 25*size * np.cos(angle), y + 25*size * np.sin(angle))
+    context.stroke()
+
+def draw_cat(context, x, y, size=1.0):
+    """Gambar kucing"""
+    context.set_source_rgb(1, 0.6, 0.2)
+    context.arc(x, y, 20*size, 0, 2 * 3.14)
+    context.fill()
+    context.move_to(x - 20*size, y - 10*size)
+    context.line_to(x - 15*size, y - 25*size)
+    context.line_to(x - 5*size, y - 15*size)
+    context.fill()
+    context.move_to(x + 5*size, y - 15*size)
+    context.line_to(x + 15*size, y - 25*size)
+    context.line_to(x + 20*size, y - 10*size)
+    context.fill()
+    context.set_source_rgb(0, 0, 0)
+    context.arc(x - 8*size, y - 5*size, 3*size, 0, 2 * 3.14)
+    context.fill()
+    context.arc(x + 8*size, y - 5*size, 3*size, 0, 2 * 3.14)
+    context.fill()
+    context.set_line_width(2*size)
+    context.arc(x, y + 5*size, 8*size, 0, 3.14)
+    context.stroke()
+
+def draw_car(context, x, y, size=1.0):
+    """Gambar mobil"""
+    context.set_source_rgb(0.2, 0.4, 0.9)
+    context.rectangle(x - 25*size, y - 10*size, 50*size, 15*size)
+    context.fill()
+    context.rectangle(x - 15*size, y - 20*size, 30*size, 10*size)
+    context.fill()
+    context.set_source_rgb(0.3, 0.3, 0.3)
+    context.arc(x - 15*size, y + 5*size, 8*size, 0, 2 * 3.14)
+    context.fill()
+    context.arc(x + 15*size, y + 5*size, 8*size, 0, 2 * 3.14)
+    context.fill()
+
+def draw_flower(context, x, y, size=1.0):
+    """Gambar bunga"""
+    context.set_source_rgb(1, 0.2, 0.5)
+    for i in range(6):
+        angle = i * 3.14 / 3
+        petal_x = x + 15*size * np.cos(angle)
+        petal_y = y + 15*size * np.sin(angle)
+        context.arc(petal_x, petal_y, 8*size, 0, 2 * 3.14)
+        context.fill()
+    context.set_source_rgb(1, 0.9, 0)
+    context.arc(x, y, 8*size, 0, 2 * 3.14)
+    context.fill()
+    context.set_source_rgb(0.2, 0.7, 0.2)
+    context.set_line_width(3*size)
+    context.move_to(x, y)
+    context.line_to(x, y + 30*size)
+    context.stroke()
+
+def draw_fish(context, x, y, size=1.0):
+    """Gambar ikan"""
+    context.set_source_rgb(1, 0.5, 0)
+    context.arc(x + 5*size, y, 15*size, 0, 2 * 3.14)
+    context.fill()
+    context.move_to(x - 10*size, y)
+    context.line_to(x - 25*size, y - 12*size)
+    context.line_to(x - 25*size, y + 12*size)
+    context.close_path()
+    context.fill()
+    context.set_source_rgb(0, 0, 0)
+    context.arc(x + 15*size, y - 5*size, 3*size, 0, 2 * 3.14)
+    context.fill()
+
+def draw_jam(context, x, y, size=1.0):
+    """Gambar jam"""
+    # Lingkaran jam
+    context.set_source_rgb(0.9, 0.9, 0.9)
+    context.arc(x, y, 20*size, 0, 2 * 3.14)
+    context.fill()
+    context.set_source_rgb(0, 0, 0)
+    context.set_line_width(2*size)
+    context.arc(x, y, 20*size, 0, 2 * 3.14)
+    context.stroke()
+    
+    # Jarum jam
+    context.move_to(x, y)
+    context.line_to(x, y - 10*size)
+    context.stroke()
+    context.move_to(x, y)
+    context.line_to(x + 7*size, y)
+    context.stroke()
+    
+    # Tambahkan angka jam
+    context.set_source_rgb(0, 0, 0)
+    context.select_font_face("Sans", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
+    context.set_font_size(5*size) 
+    
+    # Angka 12 (atas)
+    context.move_to(x - 2.5*size, y - 15*size)   
+    context.show_text("12")
+    
+    # Angka 6 (bawah)
+    context.move_to(x - 2*size, y + 12*size)   
+    context.show_text("6")
+    
+    # Angka 9 (kiri)
+    context.move_to(x - 18*size, y + 2*size)   
+    context.show_text("9")
+    
+    # Angka 3 (kanan)
+    context.move_to(x + 14*size, y + 2*size)   
+    context.show_text("3")
+def draw_chicken(context, x, y, size=1.0):
+    """Gambar ayam"""
+    edge_width = 1.5*size
+    
+    # Tubuh ayam (warna putih)
+    context.set_source_rgb(1, 1, 1)
+    context.arc(x, y, 18*size, 0, 2 * 3.14)
+    context.fill_preserve()  # Gunakan fill_preserve, bukan fill
+    context.set_source_rgb(0, 0, 0)  # Hitam
+    context.set_line_width(edge_width)
+    context.stroke()
+    
+    # Kepala ayam (warna putih)
+    context.set_source_rgb(1, 1, 1)
+    context.arc(x - 5*size, y - 18*size, 12*size, 0, 2 * 3.14)
+    context.fill_preserve()  # Gunakan fill_preserve
+    context.set_source_rgb(0, 0, 0)  # Hitam
+    context.set_line_width(edge_width)
+    context.stroke()
+    
+    # Jengger (warna merah)
+    context.set_source_rgb(1, 0.2, 0)
+    context.move_to(x - 5*size, y - 28*size)
+    context.line_to(x - 10*size, y - 25*size)
+    context.line_to(x - 7*size, y - 22*size)
+    context.line_to(x - 5*size, y - 25*size)
+    context.line_to(x - 3*size, y - 22*size)
+    context.line_to(x, y - 25*size)
+    context.close_path()
+    context.fill() 
+
+    # Paruh (warna oranye) -  
+    context.set_source_rgb(1, 0.5, 0)
+    context.move_to(x - 5*size, y - 15*size)
+    context.line_to(x - 12*size, y - 13*size)
+    context.line_to(x - 5*size, y - 11*size)
+    context.close_path()
+    context.fill() 
+
+    # Mata kiri
+    context.set_source_rgb(0, 0, 0)
+    context.arc(x - 8*size, y - 18*size, 2*size, 0, 2 * 3.14)
+    context.fill()
+
+    # Mata kanan
+    context.set_source_rgb(0, 0, 0)
+    context.arc(x - 2*size, y - 18*size, 2*size, 0, 2 * 3.14)
+    context.fill()  
+
+    # Pupil mata (titik putih kecil) -  
+    context.set_source_rgb(1, 1, 1)
+    context.arc(x - 7.5*size, y - 18.5*size, 0.8*size, 0, 2 * 3.14)
+    context.fill()  # Menggunakan fill() saja tanpa stroke()
+
+    context.arc(x - 1.5*size, y - 18.5*size, 0.8*size, 0, 2 * 3.14)
+    context.fill()
+    
+    # Kaki kiri
+    context.set_source_rgb(1, 0.5, 0)
+    context.set_line_width(2*size)
+    context.move_to(x - 8*size, y + 15*size)
+    context.line_to(x - 8*size, y + 25*size)
+    context.stroke()  # Kaki sudah digambar dengan stroke, tidak perlu garis tepi tambahan
+    
+    # Kaki kanan
+    context.move_to(x + 8*size, y + 15*size)
+    context.line_to(x + 8*size, y + 25*size)
+    context.stroke()  # Kaki sudah digambar dengan stroke, tidak perlu garis tepi tambahan
+    
+    # Cakar kiri
+    context.set_line_width(1.5*size)
+    context.move_to(x - 8*size, y + 25*size)
+    context.line_to(x - 12*size, y + 28*size)
+    context.stroke()
+    context.move_to(x - 8*size, y + 25*size)
+    context.line_to(x - 8*size, y + 30*size)
+    context.stroke()
+    context.move_to(x - 8*size, y + 25*size)
+    context.line_to(x - 4*size, y + 28*size)
+    context.stroke()  # Cakar sudah digambar dengan stroke, tidak perlu garis tepi tambahan
+    
+    # Cakar kanan
+    context.move_to(x + 8*size, y + 25*size)
+    context.line_to(x + 4*size, y + 28*size)
+    context.stroke()
+    context.move_to(x + 8*size, y + 25*size)
+    context.line_to(x + 8*size, y + 30*size)
+    context.stroke()
+    context.move_to(x + 8*size, y + 25*size)
+    context.line_to(x + 12*size, y + 28*size)
+    context.stroke()    
+
+def draw_penghapus(context, x, y, size=1.0):
+    """Gambar penghapus"""
+    context.set_source_rgb(1, 0.8, 0.8)
+    context.rectangle(x - 15*size, y - 10*size, 30*size, 15*size)
+    context.fill()
+    context.set_source_rgb(0.9, 0.6, 0.6)
+    context.rectangle(x - 15*size, y + 5*size, 30*size, 5*size)
+    context.fill()
+    
+def draw_house(context, x, y, size=1.0):
+    """Gambar rumah"""
+    context.set_source_rgb(0.9, 0.7, 0.5)
+    context.rectangle(x - 20*size, y - 10*size, 40*size, 30*size)
+    context.fill()
+    context.set_source_rgb(0.8, 0.2, 0.2)
+    context.move_to(x - 25*size, y - 10*size)
+    context.line_to(x, y - 30*size)
+    context.line_to(x + 25*size, y - 10*size)
+    context.close_path()
+    context.fill()
+    context.set_source_rgb(0.4, 0.2, 0.1)
+    context.rectangle(x - 8*size, y + 5*size, 16*size, 15*size)
+    context.fill()
+
+def draw_book(context, x, y, size=1.0):
+    """Gambar buku"""
+    context.set_source_rgb(0.2, 0.4, 0.8)
+    context.rectangle(x - 15*size, y - 20*size, 30*size, 40*size)
+    context.fill()
+    context.set_source_rgb(0.1, 0.2, 0.6)
+    context.set_line_width(2*size)
+    context.move_to(x - 10*size, y - 20*size)
+    context.line_to(x - 10*size, y + 20*size)
+    context.stroke()
+    context.set_source_rgb(0.3, 0.5, 0.9)
+    context.rectangle(x - 5*size, y - 12*size, 15*size, 8*size)
+    context.fill()
+
+def draw_pencil(context, x, y, size=1.0):
+    """Gambar pensil"""
+    context.set_source_rgb(1, 0.8, 0.2)
+    context.rectangle(x - 3*size, y - 25*size, 6*size, 35*size)
+    context.fill()
+    context.set_source_rgb(1, 0.6, 0.4)
+    context.rectangle(x - 3*size, y - 28*size, 6*size, 5*size)
+    context.fill()
+    context.set_source_rgb(0.3, 0.3, 0.3)
+    context.move_to(x - 3*size, y - 28*size)
+    context.line_to(x, y - 35*size)
+    context.line_to(x + 3*size, y - 28*size)
+    context.close_path()
+    context.fill()
+    context.set_source_rgb(0.9, 0.6, 0.7)
+    context.rectangle(x - 4*size, y + 8*size, 8*size, 5*size)
+    context.fill()
+
+def draw_number(context, number, x, y, size=60, bg_scale=1.5):
+    """Draw a single number with colorful background"""
+    colors = [(0.9, 0.2, 0.2), (0.2, 0.8, 0.4), (0.2, 0.6, 0.9), (0.9, 0.5, 0.2), (0.5, 0.2, 0.8)]
+    color = random.choice(colors)
+    context.set_source_rgb(*color)
+    radius = (size / 2) * bg_scale
+    context.arc(x, y, radius, 0, 2 * 3.14)
+    context.fill()
+    
+    context.set_source_rgb(1, 1, 1)
+    context.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
+    context.set_font_size(size)
+    extents = context.text_extents(str(number))
+    text_x = x - extents[2]/2
+    text_y = y + extents[3]/2
+    context.move_to(text_x, text_y)
+    context.show_text(str(number))
+    context.stroke()
+
+def draw_pisau(context, x, y, size=1.0):
+    """Gambar pisau"""
+    context.set_source_rgb(0.6, 0.8, 0.9)  # Warna biru muda untuk blade
+    
+    # Bentuk blade yang lebih akurat (runcing di ujung)
+    context.move_to(x, y - 30*size)  # Ujung paling tajam blade
+    context.line_to(x - 8*size, y - 10*size)  # Sisi kiri blade
+    context.line_to(x - 6*size, y + 15*size)  # Pangkal kiri blade
+    context.line_to(x + 6*size, y + 15*size)  # Pangkal kanan blade
+    context.line_to(x + 8*size, y - 10*size)  # Sisi kanan blade
+    context.close_path()
+    context.fill()
+    
+    # Gambar gagang pisau (warna coklat)
+    context.set_source_rgb(0.6, 0.3, 0.1)  # Warna coklat untuk gagang
+    
+    # Bentuk gagang yang lebih proporsional
+    context.move_to(x - 6*size, y + 15*size)  # Sisi kiri atas gagang
+    context.line_to(x - 8*size, y + 25*size)  # Sisi kiri bawah gagang
+    context.line_to(x + 8*size, y + 25*size)  # Sisi kanan bawah gagang
+    context.line_to(x + 6*size, y + 15*size)  # Sisi kanan atas gagang
+    context.close_path()
+    context.fill()
+    
+    # Tambahkan detail garis hitam pada blade
+    context.set_source_rgb(0, 0, 0)
+    context.set_line_width(0.8*size)
+    
+    # Garis utama di tengah blade
+    context.move_to(x, y - 30*size)
+    context.line_to(x, y + 15*size)
+    context.stroke()
+    
+    # Garis detail diagonal di blade
+    context.set_line_width(0.6*size)
+    context.move_to(x - 4*size, y - 20*size)
+    context.line_to(x - 2*size, y + 10*size)
+    context.stroke()
+    
+    context.move_to(x + 4*size, y - 20*size)
+    context.line_to(x + 2*size, y + 10*size)
+    context.stroke()
+    
+    # Tambahkan detail pada gagang
+    context.set_line_width(0.5*size)
+    context.move_to(x - 6*size, y + 18*size)
+    context.line_to(x + 6*size, y + 18*size)
+    context.stroke()
+    
+    context.move_to(x - 5*size, y + 21*size)
+    context.line_to(x + 5*size, y + 21*size)
+    context.stroke()
+    
+    # Tambahkan garis batas antara blade dan gagang
+    context.set_line_width(1.0*size)
+    context.move_to(x - 6*size, y + 15*size)
+    context.line_to(x + 6*size, y + 15*size)
+    context.stroke()
+    
+def draw_letter(context, letter, x, y, size=60,bg_scale=1.5):
+    """Draw a single letter with colorful background"""
+    colors = [(0.9, 0.2, 0.2), (0.2, 0.8, 0.4), (0.2, 0.6, 0.9), (0.9, 0.5, 0.2), (0.5, 0.2, 0.8)]
+    color = random.choice(colors)
+    context.set_source_rgb(*color)
+    radius = (size / 2) * bg_scale
+    context.arc(x, y, radius, 0, 2 * 3.14)
+    context.fill()
+    
+    context.set_source_rgb(1, 1, 1)
+    context.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
+    context.set_font_size(size)
+    extents = context.text_extents(letter)
+    text_x = x - extents[2]/2
+    text_y = y + extents[3]/2
+    context.move_to(text_x, text_y)
+    context.show_text(letter)
+    context.stroke()
+
+def draw_background(context):
+    """Draw a colorful gradient background with small star effects"""
+    grad = cairo.LinearGradient(0, 0, 0, HEIGHT)
+    grad.add_color_stop_rgb(0, 0.6, 0.4, 0.8)
+    grad.add_color_stop_rgb(0.5, 0.9, 0.4, 0.7)
+    grad.add_color_stop_rgb(1, 0.4, 0.6, 0.9)
+    context.set_source(grad)
+    context.rectangle(0, 0, WIDTH, HEIGHT)
+    context.fill()
+    
+    context.set_source_rgba(1, 1, 1, 0.3)
+    for i in range(20):
+        x = random.randint(0, WIDTH)
+        y = random.randint(0, HEIGHT // 3)
+        context.arc(x, y, 3, 0, 2 * 3.14)
+        context.fill()
+
+def draw_heart(context, x, y, filled):
+    """Draw a heart for lives counter"""
+    if filled:
+        context.set_source_rgb(1, 0.2, 0.2)
+    else:
+        context.set_source_rgb(0.7, 0.7, 0.7)
+    
+    context.move_to(x, y + 8)
+    context.curve_to(x, y + 5, x - 5, y, x - 10, y)
+    context.curve_to(x - 15, y, x - 15, y + 7, x - 15, y + 7)
+    context.curve_to(x - 15, y + 12, x - 10, y + 17, x, y + 22)
+    context.curve_to(x + 10, y + 17, x + 15, y + 12, x + 15, y + 7)
+    context.curve_to(x + 15, y + 7, x + 15, y, x + 10, y)
+    context.curve_to(x + 5, y, x, y + 5, x, y + 8)
+    context.fill()
+
+def draw_star(context, x, y, size):
+    """Draw a star for score or celebration"""
+    context.set_source_rgb(1, 0.84, 0)
+    context.move_to(x, y - size)
+    for i in range(1, 11):
+        angle = i * 3.14159 / 5
+        r = size if i % 2 == 0 else size / 2
+        context.line_to(x + r * np.sin(angle), y - r * np.cos(angle))
+    context.close_path()
+    context.fill()
+
+# --- 3. KELAS TOMBOL (Button Class) ---
 
 class Button:
-    def __init__(self, x, y, width, height, text, color, hover_color):
-        self.rect = pygame.Rect(x, y, width, height)
+    def __init__(self, x, y, width, height, text, color, font_size=30, is_circle=False,text_offset_y=0):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
         self.text = text
         self.color = color
-        self.hover_color = hover_color
-        self.is_hovered = False
+        self.font_size = font_size
+        self.hover = False
+        self.is_circle = is_circle
+        self.text_offset_y = text_offset_y
         
-    def draw(self, screen):
-        color = self.hover_color if self.is_hovered else self.color
-        pygame.draw.rect(screen, color, self.rect, border_radius=10)
-        pygame.draw.rect(screen, BLACK, self.rect, 2, border_radius=10)
+    def draw(self, context):
+        # Background color
+        color = [min(c * 1.2, 1) for c in self.color] if self.hover else self.color
+        context.set_source_rgb(*color)
         
-        text_surf = font_medium.render(self.text, True, BLACK)
-        text_rect = text_surf.get_rect(center=self.rect.center)
-        screen.blit(text_surf, text_rect)
-        
-    def check_hover(self, pos):
-        self.is_hovered = self.rect.collidepoint(pos)
-        
-    def is_clicked(self, pos, event):
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            return self.rect.collidepoint(pos)
-        return False
-
-class ColorEducation:
-    def __init__(self):
-        self.colors = [
-            (RED, "Merah"),
-            (GREEN, "Hijau"),
-            (BLUE, "Biru"),
-            (YELLOW, "Kuning"),
-            (PURPLE, "Ungu"),
-            (ORANGE, "Oranye")
-        ]
-        self.current_color_index = 0
-        self.animation_timer = 0
-        self.show_name = True
-        
-    def update(self):
-        self.animation_timer += 1
-        if self.animation_timer > 120:  # Ganti warna setiap 2 detik
-            self.animation_timer = 0
-            self.current_color_index = (self.current_color_index + 1) % len(self.colors)
-            self.show_name = True
-            
-        # Sembunyikan nama setelah 1 detik
-        if self.animation_timer > 60:
-            self.show_name = False
-            
-    def draw(self, screen):
-        # Judul
-        title = font_large.render("Belajar Warna", True, BLACK)
-        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 50))
-        screen.blit(title, title_rect)
-        
-        # Gambar lingkaran dengan warna saat ini
-        color, name = self.colors[self.current_color_index]
-        pygame.draw.circle(screen, color, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2), 150)
-        pygame.draw.circle(screen, BLACK, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2), 150, 3)
-        
-        # Tampilkan nama warna
-        if self.show_name:
-            name_surf = font_xlarge.render(name, True, BLACK)
-            name_rect = name_surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 250))
-            screen.blit(name_surf, name_rect)
-            
-        # Petunjuk
-        hint = font_medium.render("Perhatikan warna dan namanya!", True, BLACK)
-        hint_rect = hint.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 50))
-        screen.blit(hint, hint_rect)
-
-class NumberEducation:
-    def __init__(self):
-        self.current_number = 1
-        self.animation_timer = 0
-        self.show_number = True
-        self.max_number = 10
-        
-    def update(self):
-        self.animation_timer += 1
-        if self.animation_timer > 120:  # Ganti angka setiap 2 detik
-            self.animation_timer = 0
-            self.current_number = (self.current_number % self.max_number) + 1
-            self.show_number = True
-            
-        # Sembunyikan angka setelah 1 detik
-        if self.animation_timer > 60:
-            self.show_number = False
-            
-    def draw(self, screen):
-        # Judul
-        title = font_large.render("Belajar Angka", True, BLACK)
-        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 50))
-        screen.blit(title, title_rect)
-        
-        # Gambar kotak untuk angka
-        box_rect = pygame.Rect(SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 100, 200, 200)
-        pygame.draw.rect(screen, LIGHT_GRAY, box_rect, border_radius=10)
-        pygame.draw.rect(screen, BLACK, box_rect, 3, border_radius=10)
-        
-        # Tampilkan angka
-        if self.show_number:
-            number_surf = font_xlarge.render(str(self.current_number), True, BLACK)
-            number_rect = number_surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
-            screen.blit(number_surf, number_rect)
+        if self.is_circle:
+            radius = min(self.width, self.height) / 2
+            context.arc(self.x + radius, self.y + radius, radius, 0, 2 * 3.14)
+            context.fill()
         else:
-            # Tampilkan titik sesuai angka
-            for i in range(self.current_number):
-                angle = 2 * math.pi * i / self.current_number
-                x = SCREEN_WIDTH // 2 + 80 * math.cos(angle)
-                y = SCREEN_HEIGHT // 2 + 80 * math.sin(angle)
-                pygame.draw.circle(screen, BLACK, (int(x), int(y)), 10)
-                
-        # Petunjuk
-        hint = font_medium.render("Hitung jumlah titik!", True, BLACK)
-        hint_rect = hint.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 50))
-        screen.blit(hint, hint_rect)
-
-class MathOperationEducation:
-    def __init__(self):
-        self.operations = ["+", "-", "×"]
-        self.current_operation_index = 0
-        self.num1 = random.randint(1, 10)
-        self.num2 = random.randint(1, 10)
-        self.animation_timer = 0
-        self.show_result = False
-        self.result = 0
+            # Rounded Rectangle
+            radius = 15
+            context.arc(self.x + radius, self.y + radius, radius, 3.14, 3 * 3.14 / 2)
+            context.arc(self.x + self.width - radius, self.y + radius, radius, 3 * 3.14 / 2, 0)
+            context.arc(self.x + self.width - radius, self.y + self.height - radius, radius, 0, 3.14 / 2)
+            context.arc(self.x + radius, self.y + self.height - radius, radius, 3.14 / 2, 3.14)
+            context.close_path()
+            context.fill()
         
-    def update(self):
-        self.animation_timer += 1
-        if self.animation_timer > 180:  # Ganti operasi setiap 3 detik
-            self.animation_timer = 0
-            self.current_operation_index = (self.current_operation_index + 1) % len(self.operations)
-            self.num1 = random.randint(1, 10)
-            self.num2 = random.randint(1, 10)
-            self.show_result = False
-            
-        # Tampilkan hasil setelah 1.5 detik
-        if self.animation_timer > 90:
-            self.show_result = True
-            # Hitung hasil
-            op = self.operations[self.current_operation_index]
-            if op == "+":
-                self.result = self.num1 + self.num2
-            elif op == "-":
-                self.result = self.num1 - self.num2
-            elif op == "×":
-                self.result = self.num1 * self.num2
-                
-    def draw(self, screen):
-        # Judul
-        title = font_large.render("Belajar Operasi Matematika", True, BLACK)
-        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 50))
-        screen.blit(title, title_rect)
+        # Text
+        context.set_source_rgb(1, 1, 1)
+        context.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
+        context.set_font_size(self.font_size)
         
-        # Gambar operasi matematika
-        op = self.operations[self.current_operation_index]
+        extents = context.text_extents(self.text)
         
-        # Angka pertama
-        num1_surf = font_xlarge.render(str(self.num1), True, BLACK)
-        num1_rect = num1_surf.get_rect(center=(SCREEN_WIDTH // 2 - 150, SCREEN_HEIGHT // 2))
-        screen.blit(num1_surf, num1_rect)
+        text_x = self.x + (self.width - extents[2]) / 2
+        text_y = self.y + (self.height + extents[3]) / 2 + self.text_offset_y
         
-        # Operasi
-        op_surf = font_xlarge.render(op, True, BLACK)
-        op_rect = op_surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
-        screen.blit(op_surf, op_rect)
+        context.move_to(text_x, text_y)
+        context.show_text(self.text)
+        context.stroke()
         
-        # Angka kedua
-        num2_surf = font_xlarge.render(str(self.num2), True, BLACK)
-        num2_rect = num2_surf.get_rect(center=(SCREEN_WIDTH // 2 + 150, SCREEN_HEIGHT // 2))
-        screen.blit(num2_surf, num2_rect)
-        
-        # Garis sama dengan
-        if self.show_result:
-            pygame.draw.line(screen, BLACK, (SCREEN_WIDTH // 2 - 200, SCREEN_HEIGHT // 2 + 80), 
-                            (SCREEN_WIDTH // 2 + 200, SCREEN_HEIGHT // 2 + 80), 3)
-            
-            # Hasil
-            result_surf = font_xlarge.render(str(self.result), True, BLACK)
-            result_rect = result_surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 150))
-            screen.blit(result_surf, result_rect)
-            
-        # Petunjuk
-        hint = font_medium.render("Pelajari operasi matematika dasar!", True, BLACK)
-        hint_rect = hint.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 50))
-        screen.blit(hint, hint_rect)
-
-class ShapeEducation:
-    def __init__(self):
-        self.shapes = [
-            ("Lingkaran", self.draw_circle),
-            ("Kotak", self.draw_square),
-            ("Segitiga", self.draw_triangle),
-            ("Bintang", self.draw_star),
-            ("Hati", self.draw_heart),
-            ("Belah Ketupat", self.draw_diamond)
-        ]
-        self.current_shape_index = 0
-        self.animation_timer = 0
-        self.show_name = True
-        
-    def update(self):
-        self.animation_timer += 1
-        if self.animation_timer > 120:  # Ganti bentuk setiap 2 detik
-            self.animation_timer = 0
-            self.current_shape_index = (self.current_shape_index + 1) % len(self.shapes)
-            self.show_name = True
-            
-        # Sembunyikan nama setelah 1 detik
-        if self.animation_timer > 60:
-            self.show_name = False
-            
-    def draw(self, screen):
-        # Judul
-        title = font_large.render("Belajar Bentuk Bangun Datar", True, BLACK)
-        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 50))
-        screen.blit(title, title_rect)
-        
-        # Gambar bentuk saat ini
-        name, draw_func = self.shapes[self.current_shape_index]
-        draw_func(screen, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, 150, BLACK)
-        
-        # Tampilkan nama bentuk
-        if self.show_name:
-            name_surf = font_xlarge.render(name, True, BLACK)
-            name_rect = name_surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 250))
-            screen.blit(name_surf, name_rect)
-            
-        # Petunjuk
-        hint = font_medium.render("Kenali berbagai bentuk bangun datar!", True, BLACK)
-        hint_rect = hint.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 50))
-        screen.blit(hint, hint_rect)
-        
-    def draw_circle(self, screen, x, y, size, color):
-        pygame.draw.circle(screen, color, (x, y), size)
-        pygame.draw.circle(screen, BLACK, (x, y), size, 3)
-        
-    def draw_square(self, screen, x, y, size, color):
-        rect = pygame.Rect(x - size, y - size, size * 2, size * 2)
-        pygame.draw.rect(screen, color, rect)
-        pygame.draw.rect(screen, BLACK, rect, 3)
-        
-    def draw_triangle(self, screen, x, y, size, color):
-        points = [
-            (x, y - size),
-            (x - size, y + size),
-            (x + size, y + size)
-        ]
-        pygame.draw.polygon(screen, color, points)
-        pygame.draw.polygon(screen, BLACK, points, 3)
-        
-    def draw_star(self, screen, x, y, size, color):
-        points = []
-        for i in range(10):
-            angle = math.pi * i / 5
-            if i % 2 == 0:
-                r = size
-            else:
-                r = size / 2
-            px = x + r * math.cos(angle - math.pi / 2)
-            py = y + r * math.sin(angle - math.pi / 2)
-            points.append((px, py))
-        pygame.draw.polygon(screen, color, points)
-        pygame.draw.polygon(screen, BLACK, points, 3)
-        
-    def draw_heart(self, screen, x, y, size, color):
-        # Gambar hati sederhana
-        pygame.draw.circle(screen, color, (x - size // 2, y - size // 2), size // 2)
-        pygame.draw.circle(screen, color, (x + size // 2, y - size // 2), size // 2)
-        points = [
-            (x - size, y),
-            (x, y + size),
-            (x + size, y)
-        ]
-        pygame.draw.polygon(screen, color, points)
-        pygame.draw.circle(screen, BLACK, (x - size // 2, y - size // 2), size // 2, 2)
-        pygame.draw.circle(screen, BLACK, (x + size // 2, y - size // 2), size // 2, 2)
-        pygame.draw.polygon(screen, BLACK, points, 2)
-        
-    def draw_diamond(self, screen, x, y, size, color):
-        points = [
-            (x, y - size),
-            (x + size, y),
-            (x, y + size),
-            (x - size, y)
-        ]
-        pygame.draw.polygon(screen, color, points)
-        pygame.draw.polygon(screen, BLACK, points, 3)
-
-class Tile:
-    def __init__(self, x, y, tile_type, tile_value, is_image=True, layer=0):
-        self.rect = pygame.Rect(x, y, 80, 100)
-        self.tile_type = tile_type  # "color", "number", "math", "shape"
-        self.tile_value = tile_value  # Warna, angka, operasi, atau bentuk
-        self.is_image = is_image  # True untuk gambar, False untuk kata
-        self.selected = False
-        self.matched = False
-        self.visible = True
-        self.layer = layer  # Lapisan tumpukan
-        self.removing = False
-        self.remove_timer = 0
-        self.alpha = 255  # Untuk efek fade out
-        
-    def draw(self, screen):
-        if not self.visible:
-            return
-            
-        # Efek fade out saat menghilang
-        if self.removing:
-            self.alpha = max(0, self.alpha - 15)
-            if self.alpha <= 0:
-                self.visible = False
-                return
-                
-        # Buat surface transparan untuk efek fade
-        tile_surface = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
-        tile_surface.fill((255, 255, 255, self.alpha))
-        
-        # Gambar border
-        border_color = (0, 0, 0, self.alpha)
-        if self.selected:
-            pygame.draw.rect(tile_surface, (0, 200, 0, self.alpha), (0, 0, self.rect.width, self.rect.height), border_radius=5)
-        pygame.draw.rect(tile_surface, border_color, (0, 0, self.rect.width, self.rect.height), 2, border_radius=5)
-        
-        if self.is_image:
-            # Gambar berdasarkan jenis ubin
-            if self.tile_type == "color":
-                pygame.draw.circle(tile_surface, (*self.tile_value, self.alpha), (self.rect.width // 2, 40), 25)
-            elif self.tile_type == "number":
-                num_surf = font_large.render(str(self.tile_value), True, (0, 0, 0, self.alpha))
-                num_rect = num_surf.get_rect(center=(self.rect.width // 2, 40))
-                tile_surface.blit(num_surf, num_rect)
-            elif self.tile_type == "math":
-                # Gambar operasi matematika
-                num1, op, num2 = self.tile_value
-                op_text = str(num1) + op + str(num2)
-                op_surf = font_medium.render(op_text, True, (0, 0, 0, self.alpha))
-                op_rect = op_surf.get_rect(center=(self.rect.width // 2, 40))
-                tile_surface.blit(op_surf, op_rect)
-            elif self.tile_type == "shape":
-                # Gambar bentuk
-                if self.tile_value == "Lingkaran":
-                    pygame.draw.circle(tile_surface, (0, 0, 0, self.alpha), (self.rect.width // 2, 40), 25)
-                elif self.tile_value == "Kotak":
-                    shape_rect = pygame.Rect(self.rect.width // 2 - 25, 40 - 25, 50, 50)
-                    pygame.draw.rect(tile_surface, (0, 0, 0, self.alpha), shape_rect, 2)
-                elif self.tile_value == "Segitiga":
-                    points = [
-                        (self.rect.width // 2, 15),
-                        (self.rect.width // 2 - 25, 65),
-                        (self.rect.width // 2 + 25, 65)
-                    ]
-                    pygame.draw.polygon(tile_surface, (0, 0, 0, self.alpha), points, 2)
-                elif self.tile_value == "Bintang":
-                    points = []
-                    for i in range(10):
-                        angle = math.pi * i / 5
-                        if i % 2 == 0:
-                            r = 25
-                        else:
-                            r = 12
-                        px = self.rect.width // 2 + r * math.cos(angle - math.pi / 2)
-                        py = 40 + r * math.sin(angle - math.pi / 2)
-                        points.append((px, py))
-                    pygame.draw.polygon(tile_surface, (0, 0, 0, self.alpha), points, 2)
-                elif self.tile_value == "Hati":
-                    # Gambar hati sederhana
-                    pygame.draw.circle(tile_surface, (0, 0, 0, self.alpha), (self.rect.width // 2 - 12, 28), 12, 2)
-                    pygame.draw.circle(tile_surface, (0, 0, 0, self.alpha), (self.rect.width // 2 + 12, 28), 12, 2)
-                    points = [
-                        (self.rect.width // 2 - 25, 40),
-                        (self.rect.width // 2, 65),
-                        (self.rect.width // 2 + 25, 40)
-                    ]
-                    pygame.draw.polygon(tile_surface, (0, 0, 0, self.alpha), points, 2)
-                elif self.tile_value == "Belah Ketupat":
-                    points = [
-                        (self.rect.width // 2, 15),
-                        (self.rect.width // 2 + 25, 40),
-                        (self.rect.width // 2, 65),
-                        (self.rect.width // 2 - 25, 40)
-                    ]
-                    pygame.draw.polygon(tile_surface, (0, 0, 0, self.alpha), points, 2)
-        else:
-            # Gambar teks
-            text = self.get_text()
-            text_surf = font_small.render(text, True, (0, 0, 0, self.alpha))
-            text_rect = text_surf.get_rect(center=(self.rect.width // 2, 70))
-            tile_surface.blit(text_surf, text_rect)
-            
-        # Blit surface ke screen
-        screen.blit(tile_surface, (self.rect.x, self.rect.y))
-        
-    def get_text(self):
-        # Menghasilkan teks berdasarkan jenis dan nilai ubin
-        if self.tile_type == "color":
-            color_names = {
-                RED: "Merah",
-                GREEN: "Hijau",
-                BLUE: "Biru",
-                YELLOW: "Kuning",
-                PURPLE: "Ungu",
-                ORANGE: "Oranye"
-            }
-            return color_names.get(self.tile_value, "Warna")
-        elif self.tile_type == "number":
-            return f"Angka {self.tile_value}"
-        elif self.tile_type == "math":
-            num1, op, num2 = self.tile_value
-            # Hitung hasil
-            if op == "+":
-                result = num1 + num2
-            elif op == "-":
-                result = num1 - num2
-            elif op == "×":
-                result = num1 * num2
-            return f"Hasil: {result}"
-        elif self.tile_type == "shape":
-            return self.tile_value
-            
     def is_clicked(self, pos):
-        return self.rect.collidepoint(pos) and self.visible and not self.matched and not self.removing
-        
-    def toggle_selection(self):
-        self.selected = not self.selected
-        
-    def start_remove(self):
-        self.removing = True
-        self.remove_timer = 0
+        return (self.x <= pos[0] <= self.x + self.width and 
+                self.y <= pos[1] <= self.y + self.height)
+    
+    def update_hover(self, pos):
+        self.hover = self.is_clicked(pos)
 
-class MahjongGame:
-    def __init__(self):
-        self.tiles = []
-        self.selected_tiles = []
-        self.score = 0
-        self.moves = 0
-        self.feedback_timer = 0
-        self.feedback_text = ""
-        self.game_complete = False
-        self.layout_type = 0  # 0: Pyramid, 1: Diamond, 2: Cross
-        self.layouts = ["Pyramid", "Diamond", "Cross"]
+# --- 4. DATABASE PERTANYAAN ---
+
+WORD_DATABASE = [
+    {"word": "APEL", "hint": "Buah merah yang segar", "draw_func": draw_apple},
+    {"word": "BOLA", "hint": "Mainan bulat untuk ditendang", "draw_func": draw_ball},
+    {"word": "KUCING", "hint": "Hewan berbulu suka ikan", "draw_func": draw_cat},
+    {"word": "MOBIL", "hint": "Kendaraan beroda empat", "draw_func": draw_car},
+    {"word": "BUNGA", "hint": "Tumbuhan indah dan harum", "draw_func": draw_flower},
+    {"word": "IKAN", "hint": "Hewan yang hidup di air", "draw_func": draw_fish},
+    {"word": "AYAM", "hint": "Hewan berkokok pagi hari", "draw_func": draw_chicken},
+    {"word": "RUMAH", "hint": "Tempat tinggal kita", "draw_func": draw_house},
+    {"word": "JAM", "hint": "Untuk melihat waktu", "draw_func": draw_jam},
+    {"word": "BUKU", "hint": "Untuk membaca dan belajar", "draw_func": draw_book},
+    {"word": "PENSIL", "hint": "Alat untuk menulis", "draw_func": draw_pencil},
+    {"word": "PISAU", "hint": "Alat untuk memotong", "draw_func": draw_pisau},
+    {"word": "PENGHAPUS", "hint": "Untuk menghapus tulisan", "draw_func": draw_penghapus},
+]
+
+# --- 5. FUNGSI GENERATOR PERTANYAAN ---
+
+def generate_word_question():
+    """Generate a word completion question"""
+    word_data = random.choice(WORD_DATABASE)
+    word = word_data["word"]
+    hint = word_data["hint"]
+    draw_func = word_data["draw_func"]
+    missing_index = random.randint(0, len(word) - 1)
+    correct_letter = word[missing_index]
+    
+    all_letters = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    if correct_letter in all_letters:
+        all_letters.remove(correct_letter)
+    
+    # Ensure options are letters and distinct
+    wrong_letters = random.sample([l for l in all_letters if l != correct_letter], 2)
+    
+    options = [correct_letter] + wrong_letters
+    random.shuffle(options)
+    
+    # The 'word' variable here is used to hold the question state in the main loop
+    return word, hint, draw_func, missing_index, correct_letter, options, "word"
+
+# --- 6. FUNGSI GAMBAR TAMPILAN EDUKASI ---
+
+# [Fungsi draw_education_menu, draw_letter_learning, draw_word_learning, 
+# draw_number_learning, draw_math_learning sudah diimplementasi dengan baik 
+# di kode Anda sebelumnya, hanya perlu memastikan integrasi variabel status.]
+
+def draw_education_menu(context, mouse_pos):
+    """Draw education menu with letter, word, number, and math learning options"""
+    draw_background(context)
+    
+    # Title
+    context.set_source_rgb(1, 1, 1)
+    context.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
+    context.set_font_size(25)
+    title = "BELAJAR HURUF, KATA & ANGKA"
+    extents = context.text_extents(title)
+    context.move_to((WIDTH - extents[2]) / 2, 60)
+    context.show_text(title)
+    context.stroke()
+    
+    # Instructions
+    context.set_source_rgb(1, 1, 1)
+    context.set_font_size(20)
+    instruction = "Pilih aktivitas belajar:"
+    extents = context.text_extents(instruction)
+    context.move_to((WIDTH - extents[2]) / 2, 100)
+    context.show_text(instruction)
+    context.stroke()
+    
+    # Letter learning button
+    letter_btn = Button(100, 150, 150, 150, "HURUF", (0.2, 0.8, 0.4), 35, is_circle=False,text_offset_y=-20) 
+    letter_btn.update_hover(mouse_pos)
+    letter_btn.draw(context)
+    draw_letter(context, "A", 175, 240, 20) 
+    draw_letter(context, "B", 175, 280, 20)
+    
+    # Word learning button
+    word_btn = Button(280, 150, 150, 150, "KATA", (0.2, 0.6, 0.9), 35, is_circle=False, text_offset_y=-20)
+    word_btn.update_hover(mouse_pos)
+    word_btn.draw(context)
+    context.set_source_rgb(1, 1, 1)
+    context.set_font_size(20)
+    context.move_to(330, 240)
+    context.show_text("APEL")
+    context.stroke()
+    draw_apple(context, 355, 270, 0.6)
+    
+    # Number learning button
+    number_btn = Button(460, 150, 150, 150, "ANGKA", (0.9, 0.5, 0.2), 35, is_circle=False, text_offset_y=-20)
+    number_btn.update_hover(mouse_pos)
+    number_btn.draw(context)
+    draw_number(context, 1, 490, 260, 20)
+    draw_number(context, 2, 535, 260, 20)
+    draw_number(context, 3, 580, 260, 20)
+    
+    # Math learning button
+    math_btn = Button(100, 330, 150, 150, "MATEMATIKA", (0.5, 0.2, 0.8), 20, is_circle=False, text_offset_y=-20)
+    math_btn.update_hover(mouse_pos)
+    math_btn.draw(context)
+    context.set_source_rgb(1, 1, 1)
+    context.set_font_size(25)
+    context.move_to(125, 430)
+    context.show_text("2 + 3 = 5")
+    context.stroke()
+    
+    # Back button
+    back_btn = Button(300, 450, 200, 60, "KEMBALI", (0.2, 0.6, 0.9), 20)
+    back_btn.update_hover(mouse_pos)
+    back_btn.draw(context)
+    
+    return letter_btn, word_btn, number_btn, math_btn, back_btn
+
+def draw_letter_learning(context, mouse_pos, current_letter_index):
+    """Draw letter learning screen"""
+    draw_background(context)
+    
+    # Title
+    context.set_source_rgb(1, 1, 1)
+    context.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
+    context.set_font_size(40)
+    title = "BELAJAR HURUF"
+    extents = context.text_extents(title)
+    context.move_to((WIDTH - extents[2]) / 2, 60)
+    context.show_text(title)
+    context.stroke()
+    
+    # Current letter
+    letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    current_letter = letters[current_letter_index]
+    
+    draw_letter(context, current_letter, WIDTH//2, 200, 120)
+    
+    context.set_source_rgb(1, 1, 1)
+    context.set_font_size(24)
+    context.move_to(WIDTH//2 - 100, 300)
+    context.show_text("Kata yang dimulai dengan " + current_letter + ":")
+    context.stroke()
+    
+    # Find words starting with this letter
+    example_words = [d for d in WORD_DATABASE if d["word"][0] == current_letter]
+    
+    y_pos = 340
+    for i, word_data in enumerate(example_words[:3]):
+        context.set_source_rgb(1, 1, 1)
+        context.set_font_size(30)
+        context.move_to(WIDTH//2 - 100, y_pos)
+        context.show_text(word_data["word"])
+        context.stroke()
         
-    def create_tiles(self):
-        # Hapus semua tile yang ada
-        self.tiles = []
-        self.selected_tiles = []
+        word_data["draw_func"](context, WIDTH//2 + 100, y_pos - 10, 0.6)
+        y_pos += 50
+    
+    # Navigation buttons
+    prev_btn = Button(150, 500, 100, 50, "←", (0.9, 0.5, 0.2), 40)
+    next_btn = Button(550, 500, 100, 50, "→", (0.9, 0.5, 0.2), 40)
+    back_btn = Button(300, 500, 200, 50, "KEMBALI", (0.2, 0.6, 0.9), 20)
+    
+    prev_btn.update_hover(mouse_pos)
+    next_btn.update_hover(mouse_pos)
+    back_btn.update_hover(mouse_pos)
+    
+    prev_btn.draw(context)
+    next_btn.draw(context)
+    back_btn.draw(context)
+    
+    return prev_btn, next_btn, back_btn
+
+def draw_word_learning(context, mouse_pos, current_word_index):
+    """Draw word learning screen"""
+    draw_background(context)
+    
+    # Title
+    context.set_source_rgb(1, 1, 1)
+    context.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
+    context.set_font_size(40)
+    title = "BELAJAR KATA"
+    extents = context.text_extents(title)
+    context.move_to((WIDTH - extents[2]) / 2, 60)
+    context.show_text(title)
+    context.stroke()
+    
+    # Current word
+    word_data = WORD_DATABASE[current_word_index]
+    word = word_data["word"]
+    hint = word_data["hint"]
+    draw_func = word_data["draw_func"]
+    
+    # Draw image
+    draw_func(context, WIDTH//2, 180, 2.0)
+    
+    # Draw word
+    context.set_source_rgb(1, 1, 1)
+    context.set_font_size(60)
+    extents = context.text_extents(word)
+    context.move_to((WIDTH - extents[2]) / 2, 280)
+    context.show_text(word)
+    context.stroke()
+    
+    # Draw hint
+    context.set_source_rgb(1, 1, 0.8)
+    context.set_font_size(24)
+    extents = context.text_extents(hint)
+    context.move_to((WIDTH - extents[2]) / 2, 320)
+    context.show_text(hint)
+    context.stroke()
+    
+    # Draw spelling
+    context.set_source_rgb(1, 1, 1)
+    context.set_font_size(20)
+    context.move_to(WIDTH//2 - 150, 360)
+    context.show_text("Ejaan:")
+    context.stroke()
+    
+    # Draw each letter
+    word_width = len(word) * 40 # approx
+    x_pos = WIDTH//2 - word_width // 2 + 20
+    for i, letter in enumerate(word):
+        draw_letter(context, letter, x_pos + i * 40, 400, 30)
+    
+    # Navigation buttons
+    prev_btn = Button(150, 500, 100, 50, "←", (0.9, 0.5, 0.2), 40)
+    next_btn = Button(550, 500, 100, 50, "→", (0.9, 0.5, 0.2), 40)
+    back_btn = Button(300, 500, 200, 50, "KEMBALI", (0.2, 0.6, 0.9), 20)
+    
+    prev_btn.update_hover(mouse_pos)
+    next_btn.update_hover(mouse_pos)
+    back_btn.update_hover(mouse_pos)
+    
+    prev_btn.draw(context)
+    next_btn.draw(context)
+    back_btn.draw(context)
+    
+    return prev_btn, next_btn, back_btn
+def generate_level1_question():
+    """Generate a level 1 question (melengkapi 1 huruf rumpang)"""
+    word_data = random.choice(WORD_DATABASE)
+    word = word_data["word"]
+    hint = word_data["hint"]
+    draw_func = word_data["draw_func"]
+    missing_index = random.randint(0, len(word) - 1)
+    correct_letter = word[missing_index]
+    
+    all_letters = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    if correct_letter in all_letters:
+        all_letters.remove(correct_letter)
+    
+    wrong_letters = random.sample(all_letters, 2)
+    options = [correct_letter] + wrong_letters
+    random.shuffle(options)
+    
+    return word, hint, draw_func, missing_index, correct_letter, options, "level1"
+
+def generate_level2_question():
+    """Generate a level 2 question (melengkapi 2-3 huruf rumpang)"""
+    word_data = random.choice(WORD_DATABASE)
+    word = word_data["word"]
+    hint = word_data["hint"]
+    draw_func = word_data["draw_func"]
+    
+    # Tentukan jumlah huruf yang hilang (2 atau 3)
+    num_missing = random.randint(2, 3)
+    if len(word) <= num_missing:
+        num_missing = len(word) - 1
+    
+    # Pilih posisi huruf yang hilang
+    missing_indices = random.sample(range(len(word)), num_missing)
+    correct_letters = [word[i] for i in missing_indices]
+    
+    # Generate opsi untuk setiap huruf yang hilang
+    all_options = []
+    for correct_letter in correct_letters:
+        all_letters = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+        if correct_letter in all_letters:
+            all_letters.remove(correct_letter)
         
-        # Buat pasangan ubin untuk setiap kategori
-        tile_pairs = []
+        wrong_letters = random.sample(all_letters, 2)
+        options = [correct_letter] + wrong_letters
+        random.shuffle(options)
+        all_options.append(options)
+    
+    return word, hint, draw_func, missing_indices, correct_letters, all_options, "level2"
+
+def generate_level3_question():
+    """Generate a level 3 question (menyusun kata dari huruf-huruf)"""
+    word_data = random.choice(WORD_DATABASE)
+    word = word_data["word"]
+    hint = word_data["hint"]
+    draw_func = word_data["draw_func"]
+    
+    # Acak huruf-huruf kata
+    letters = list(word)
+    random.shuffle(letters)
+    
+    # Tambahkan beberapa huruf acak sebagai distraktor
+    all_letters = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    for letter in word:
+        if letter in all_letters:
+            all_letters.remove(letter)
+    
+    distractors = random.sample(all_letters, min(3, len(all_letters)))
+    all_letters_options = letters + distractors
+    random.shuffle(all_letters_options)
+    
+    return word, hint, draw_func, all_letters_options, "level3"
+
+def generate_level4_question():
+    """Generate a level 4 question (mencocokkan kata dengan gambar)"""
+    # Pilih kata yang benar
+    correct_data = random.choice(WORD_DATABASE)
+    correct_word = correct_data["word"]
+    correct_hint = correct_data["hint"]
+    correct_draw_func = correct_data["draw_func"]
+    
+    # Pilih 3 kata lain sebagai opsi salah
+    other_options = [d for d in WORD_DATABASE if d["word"] != correct_word]
+    wrong_options = random.sample(other_options, min(3, len(other_options)))
+    
+    # Buat list opsi
+    options = [{"word": correct_word, "hint": correct_hint, "draw_func": correct_draw_func}]
+    for option in wrong_options:
+        options.append({"word": option["word"], "hint": option["hint"], "draw_func": option["draw_func"]})
+    
+    random.shuffle(options)
+    
+    return correct_word, correct_hint, correct_draw_func, options, "level4"
+
+# --- 6. FUNGSI GAMBAR TAMPILAN EDUKASI ---
+# [Fungsi draw_education_menu, draw_letter_learning, draw_word_learning, 
+# draw_number_learning sudah diimplementasi dengan baik di kode Anda sebelumnya]
+
+def draw_level_select_menu(context, mouse_pos, unlocked_levels):
+    """Draw level selection menu"""
+    draw_background(context)
+    
+    # Title
+    context.set_source_rgb(1, 1, 1)
+    context.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
+    context.set_font_size(40)
+    title = "PILIH LEVEL"
+    extents = context.text_extents(title)
+    context.move_to((WIDTH - extents[2]) / 2, 60)
+    context.show_text(title)
+    context.stroke()
+    
+    # Instructions
+    context.set_source_rgb(1, 1, 1)
+    context.set_font_size(20)
+    instruction = "Klik level yang ingin dimainkan"
+    extents = context.text_extents(instruction)
+    context.move_to((WIDTH - extents[2]) / 2, 100)
+    context.show_text(instruction)
+    context.stroke()
+    
+    # Level buttons
+    level_buttons = []
+    level_descriptions = [
+        "Level 1: Melengkapi 1 huruf rumpang",
+        "Level 2: Melengkapi 2-3 huruf rumpang",
+        "Level 3: Menyusun kata dari huruf-huruf",
+        "Level 4: Mencocokkan kata dengan gambar"
+    ]
+    
+    for i in range(4):
+        y_pos = 150 + i * 100
         
-        # Warna
-        colors = [RED, GREEN, BLUE, YELLOW, PURPLE, ORANGE]
-        for color in colors:
-            tile_pairs.append(("color", color, True))  # Gambar
-            tile_pairs.append(("color", color, False))  # Teks
-            
-        # Angka
-        numbers = [1, 2, 3, 4, 5, 6]
-        for number in numbers:
-            tile_pairs.append(("number", number, True))  # Gambar
-            tile_pairs.append(("number", number, False))  # Teks
-            
-        # Operasi Matematika
-        math_ops = [
-            (1, "+", 1),
-            (2, "+", 2),
-            (3, "+", 3),
-            (4, "-", 1),
-            (5, "-", 2),
-            (6, "-", 3),
-            (2, "×", 2),
-            (3, "×", 3),
-            (4, "×", 1)
-        ]
-        for op in math_ops:
-            tile_pairs.append(("math", op, True))  # Gambar
-            tile_pairs.append(("math", op, False))  # Teks
-            
-        # Bentuk
-        shapes = ["Lingkaran", "Kotak", "Segitiga", "Bintang", "Hati", "Belah Ketupat"]
-        for shape in shapes:
-            tile_pairs.append(("shape", shape, True))  # Gambar
-            tile_pairs.append(("shape", shape, False))  # Teks
-            
-        # Acak ubin
-        random.shuffle(tile_pairs)
-        
-        # Buat layout berdasarkan tipe
-        if self.layout_type == 0:  # Pyramid
-            self.create_pyramid_layout(tile_pairs)
-        elif self.layout_type == 1:  # Diamond
-            self.create_diamond_layout(tile_pairs)
-        else:  # Cross
-            self.create_cross_layout(tile_pairs)
-            
-    def create_pyramid_layout(self, tile_pairs):
-        # Layout piramida dengan 9 baris
-        rows = 9
-        start_x = SCREEN_WIDTH // 2 - 400
-        start_y = 100
-        
-        tile_index = 0
-        for row in range(rows):
-            # Jumlah tile di setiap baris
-            tiles_in_row = min(row + 1, 9)
-            
-            # Posisi x awal untuk baris ini
-            x_offset = (9 - tiles_in_row) * 45
-            
-            for col in range(tiles_in_row):
-                if tile_index < len(tile_pairs):
-                    tile_type, tile_value, is_image = tile_pairs[tile_index]
-                    x = start_x + x_offset + col * 90
-                    y = start_y + row * 40
-                    
-                    # Hitung layer (semakin ke bawah semakin tinggi)
-                    layer = rows - row
-                    
-                    self.tiles.append(Tile(x, y, tile_type, tile_value, is_image, layer))
-                    tile_index += 1
-                    
-    def create_diamond_layout(self, tile_pairs):
-        # Layout berlian
-        rows = 11
-        start_x = SCREEN_WIDTH // 2 - 400
-        start_y = 100
-        
-        tile_index = 0
-        for row in range(rows):
-            # Jumlah tile di setiap baris
-            if row < 6:
-                tiles_in_row = row + 1
-            else:
-                tiles_in_row = 11 - row
-                
-            # Posisi x awal untuk baris ini
-            x_offset = (9 - tiles_in_row) * 45
-            
-            for col in range(tiles_in_row):
-                if tile_index < len(tile_pairs):
-                    tile_type, tile_value, is_image = tile_pairs[tile_index]
-                    x = start_x + x_offset + col * 90
-                    y = start_y + row * 40
-                    
-                    # Hitung layer
-                    if row < 6:
-                        layer = row
-                    else:
-                        layer = 10 - row
-                        
-                    self.tiles.append(Tile(x, y, tile_type, tile_value, is_image, layer))
-                    tile_index += 1
-                    
-    def create_cross_layout(self, tile_pairs):
-        # Layout silang
-        start_x = SCREEN_WIDTH // 2 - 400
-        start_y = 100
-        
-        # Bagian horizontal
-        for i in range(9):
-            if i < len(tile_pairs):
-                tile_type, tile_value, is_image = tile_pairs[i]
-                x = start_x + i * 90
-                y = start_y + 200
-                self.tiles.append(Tile(x, y, tile_type, tile_value, is_image, 1))
-                
-        # Bagian vertikal
-        for i in range(9):
-            if i + 9 < len(tile_pairs):
-                tile_type, tile_value, is_image = tile_pairs[i + 9]
-                x = start_x + 360
-                y = start_y + i * 40
-                layer = 2 if i == 4 else 1  # Tengah lebih tinggi
-                self.tiles.append(Tile(x, y, tile_type, tile_value, is_image, layer))
-                
-        # Tambahkan tile di sisi
-        for i in range(18):
-            if i + 18 < len(tile_pairs):
-                tile_type, tile_value, is_image = tile_pairs[i + 18]
-                
-                # Sisi kiri
-                if i < 9:
-                    x = start_x - 90
-                    y = start_y + i * 40
-                    layer = 1
-                # Sisi kanan
-                else:
-                    x = start_x + 810
-                    y = start_y + (i - 9) * 40
-                    layer = 1
-                    
-                self.tiles.append(Tile(x, y, tile_type, tile_value, is_image, layer))
-                
-    def is_tile_selectable(self, tile):
-        # Cek apakah tile bisa dipilih (tidak terhalang oleh tile lain)
-        if tile.matched or tile.removing:
-            return False
-            
-        # Cek apakah ada tile di atasnya yang menghalangi
-        for other_tile in self.tiles:
-            if (other_tile != tile and other_tile.visible and not other_tile.matched and 
-                not other_tile.removing and other_tile.layer > tile.layer):
-                # Cek apakah tile lain menutupi tile ini
-                if (abs(other_tile.rect.centerx - tile.rect.centerx) < 40 and
-                    abs(other_tile.rect.centery - tile.rect.centery) < 30):
-                    return False
-                    
-        return True
-        
-    def handle_click(self, pos):
-        # Cari tile yang diklik
-        for tile in self.tiles:
-            if tile.is_clicked(pos) and self.is_tile_selectable(tile):
-                # Jika sudah ada 2 tile terpilih, reset pilihan
-                if len(self.selected_tiles) >= 2:
-                    for selected_tile in self.selected_tiles:
-                        selected_tile.toggle_selection()
-                    self.selected_tiles = []
-                    
-                # Tambahkan tile ke pilihan
-                tile.toggle_selection()
-                self.selected_tiles.append(tile)
-                
-                # Jika sudah ada 2 tile terpilih, periksa kecocokan
-                if len(self.selected_tiles) == 2:
-                    self.moves += 1
-                    self.check_match()
-                break
-                
-    def check_match(self):
-        tile1, tile2 = self.selected_tiles
-        
-        # Periksa apakah satu tile adalah gambar dan yang lain adalah kata
-        if tile1.is_image != tile2.is_image:
-            # Periksa apakah jenis dan nilai sama
-            if tile1.tile_type == tile2.tile_type and tile1.tile_value == tile2.tile_value:
-                # Cocok!
-                tile1.start_remove()
-                tile2.start_remove()
-                self.score += 10
-                self.feedback_text = "Cocok! +10 poin"
-                self.feedback_timer = 60
-                
-                # Periksa apakah semua tile telah dicocokkan
-                if all(tile.matched or tile.removing for tile in self.tiles):
-                    self.game_complete = True
-            else:
-                # Tidak cocok
-                self.feedback_text = "Tidak cocok! Coba lagi"
-                self.feedback_timer = 60
+        # Determine button color based on unlock status
+        if i < unlocked_levels:
+            color = (0.2, 0.8, 0.4)  # Green for unlocked
+            text_color = (1, 1, 1)    # White text
         else:
-            # Keduanya gambar atau keduanya kata
-            self.feedback_text = "Pilih satu gambar dan satu kata!"
-            self.feedback_timer = 60
-            
-    def update(self):
-        # Update feedback timer
-        if self.feedback_timer > 0:
-            self.feedback_timer -= 1
-            
-        # Update tile yang sedang dihapus
-        for tile in self.tiles:
-            if tile.removing:
-                tile.remove_timer += 1
-                if tile.remove_timer > 20:  # Setelah 20 frame, tandai sebagai matched
-                    tile.matched = True
-                    
-    def draw(self, screen):
-        # Gambar semua tile, diurutkan berdasarkan layer
-        sorted_tiles = sorted(self.tiles, key=lambda t: t.layer)
-        for tile in sorted_tiles:
-            tile.draw(screen)
-            
-        # Gambar highlight untuk tile yang bisa dipilih
-        mouse_pos = pygame.mouse.get_pos()
-        for tile in self.tiles:
-            if tile.rect.collidepoint(mouse_pos) and self.is_tile_selectable(tile):
-                # Gambar highlight
-                highlight_surf = pygame.Surface((tile.rect.width, tile.rect.height), pygame.SRCALPHA)
-                highlight_surf.fill((255, 255, 0, 50))
-                screen.blit(highlight_surf, (tile.rect.x, tile.rect.y))
-                
-        # Gambar skor dan langkah
-        score_text = font_medium.render(f"Skor: {self.score}", True, BLACK)
-        screen.blit(score_text, (20, 20))
+            color = (0.5, 0.5, 0.5)  # Gray for locked
+            text_color = (0.8, 0.8, 0.8)  # Light gray text
         
-        moves_text = font_medium.render(f"Langkah: {self.moves}", True, BLACK)
-        screen.blit(moves_text, (20, 50))
+        # Create button
+        btn = Button(200, y_pos, 400, 80, level_descriptions[i], color, 20)
+        btn.update_hover(mouse_pos)
+        btn.draw(context)
+        level_buttons.append(btn)
         
-        # Gambar layout type
-        layout_text = font_medium.render(f"Layout: {self.layouts[self.layout_type]}", True, BLACK)
-        screen.blit(layout_text, (20, 80))
-        
-        # Gambar feedback
-        if self.feedback_timer > 0:
-            feedback_surf = font_medium.render(self.feedback_text, True, BLACK)
-            feedback_rect = feedback_surf.get_rect(center=(SCREEN_WIDTH // 2, 50))
-            pygame.draw.rect(screen, YELLOW, feedback_rect.inflate(20, 10))
-            pygame.draw.rect(screen, BLACK, feedback_rect.inflate(20, 10), 2)
-            screen.blit(feedback_surf, feedback_rect)
-            
-        # Gambar overlay jika game selesai
-        if self.game_complete:
-            overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
-            overlay.fill((0, 255, 0, 128))
-            screen.blit(overlay, (0, 0))
-            
-            # Teks menang
-            win_text = font_xlarge.render("Selamat! Anda Menang!", True, BLACK)
-            win_rect = win_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50))
-            screen.blit(win_text, win_rect)
-            
-            # Skor akhir
-            score_text = font_large.render(f"Skor Akhir: {self.score}", True, BLACK)
-            score_rect = score_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 20))
-            screen.blit(score_text, score_rect)
-            
-            # Langkah
-            moves_text = font_large.render(f"Total Langkah: {self.moves}", True, BLACK)
-            moves_rect = moves_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 70))
-            screen.blit(moves_text, moves_rect)
-            
-            # Tombol layout berikutnya
-            next_text = font_medium.render("Tekan SPACE untuk layout berikutnya", True, BLACK)
-            next_rect = next_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 120))
-            screen.blit(next_text, next_rect)
+        # Draw lock icon for locked levels
+        if i >= unlocked_levels:
+            context.set_source_rgb(*text_color)
+            context.set_font_size(30)
+            context.move_to(550, y_pos + 50)
+            context.show_text("🔒")
+            context.stroke()
+    
+    # Back button
+    back_btn = Button(300, 520, 200, 50, "KEMBALI", (0.2, 0.6, 0.9), 20)
+    back_btn.update_hover(mouse_pos)
+    back_btn.draw(context)
+    
+    return level_buttons, back_btn
 
-class Game:
-    def __init__(self):
-        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-        pygame.display.set_caption("Game Edukatif Mahjong - Versi Kompleks")
-        self.clock = pygame.time.Clock()
-        self.running = True
-        self.state = "MENU"  # MENU, EDUCATION, EDUCATION_MENU, GAME
+def main():
+    score = 0
+    lives = 3
+    level_scores = [0, 0, 0, 0]  # Skor untuk setiap level
+    unlocked_levels = 1  # Hanya level 1 yang terbuka di awal
+    
+    # Mode Game
+    MENU = 0
+    WORD_GAME = 1
+    EDUCATION_MENU = 2
+    LETTER_LEARNING = 3
+    WORD_LEARNING = 4
+    NUMBER_LEARNING = 5
+    LEVEL_SELECT = 6
+    
+    game_state = MENU
+    current_level = 1  # Level yang sedang dimainkan
+    
+    # State untuk Game
+    level1_question = generate_level1_question()
+    level2_question = generate_level2_question()
+    level3_question = generate_level3_question()
+    level4_question = generate_level4_question()
+    
+    # Variabel untuk game kuis
+    current_question = level1_question
+    
+    # Variabel untuk edukasi
+    current_letter_index = 0
+    current_word_index = 0
+    current_number_index = 1
+    
+    # Umpan Balik (Feedback)
+    feedback = ""
+    feedback_timer = 0
+    show_celebration = False
+    celebration_timer = 0
+    
+    # Tombol Opsi (Game Kuis)
+    button_width = 150
+    button_height = 100
+    button_spacing = 50
+    colors = [(0.2, 0.8, 0.4), (0.2, 0.6, 0.9), (0.9, 0.5, 0.2)]
+    
+    # Tombol Kembali
+    back_btn_game = Button(20, 20, 100, 40, "KEMBALI", (0.9, 0.5, 0.2), 20)
+    
+    # Variabel untuk level 3 (menyusun kata)
+    selected_letters = []
+    letter_buttons = []
+    
+    # Variabel untuk dialog konfirmasi level complete
+    show_level_complete_dialog = False
+    dialog_buttons = []
+    level2_answers = {}  # Untuk melacak jawaban yang dipilih untuk setiap posisi
+    
+    def reset_game(level):
+        nonlocal score, lives, current_question, feedback, feedback_timer, show_celebration, celebration_timer, selected_letters, letter_buttons, show_level_complete_dialog, level2_answers
+        score = 0
+        lives = 3
+        feedback = ""
+        feedback_timer = 0
+        show_celebration = False
+        celebration_timer = 0
+        selected_letters = []
+        letter_buttons = []
+        show_level_complete_dialog = False
+        level2_answers = {}  # Reset jawaban level 2
         
-        # Komponen edukasi
-        self.color_education = ColorEducation()
-        self.number_education = NumberEducation()
-        self.math_education = MathOperationEducation()
-        self.shape_education = ShapeEducation()
+        if level == 1:
+            current_question = generate_level1_question()
+        elif level == 2:
+            current_question = generate_level2_question()
+        elif level == 3:
+            current_question = generate_level3_question()
+        elif level == 4:
+            current_question = generate_level4_question()
+    
+    def handle_answer_click(clicked_option, level, position_index=None):
+        nonlocal score, lives, current_question, feedback, feedback_timer, show_celebration, celebration_timer, level_scores, selected_letters, show_level_complete_dialog, level2_answers
         
-        # Komponen game
-        self.mahjong_game = MahjongGame()
+        is_correct = False
         
-        # Tombol
-        self.init_buttons()
+        if level == 1:
+            correct_answer = current_question[4]
+            if clicked_option == correct_answer:
+                is_correct = True
+        elif level == 2:
+            # Simpan jawaban untuk posisi ini
+            if position_index is not None:
+                level2_answers[position_index] = clicked_option
+                
+                # Periksa apakah semua jawaban sudah benar
+                word, hint, draw_func, missing_indices, correct_letters, all_options, _ = current_question
+                all_correct = True
+                
+                for i, correct_letter in enumerate(correct_letters):
+                    if i not in level2_answers or level2_answers[i] != correct_letter:
+                        all_correct = False
+                        break
+                
+                # Hanya beri poin jika semua jawaban benar
+                if all_correct and len(level2_answers) == len(correct_letters):
+                    is_correct = True
+                    feedback = "BENAR!"
+                else:
+                    feedback = f"COBA LAGI! ({len(level2_answers)}/{len(correct_letters)})"
+                    feedback_timer = 40
+        elif level == 3:
+            # Untuk level 3, kita perlu memeriksa kata yang disusun
+            correct_word = current_question[0]
+            if ''.join(selected_letters) == correct_word:
+                is_correct = True
+        elif level == 4:
+            correct_word = current_question[0]
+            if clicked_option == correct_word:
+                is_correct = True
         
-    def init_buttons(self):
-        # Menu utama
-        self.education_button = Button(SCREEN_WIDTH // 2 - 150, 200, 300, 60, "Edukasi", GREEN, LIGHT_GRAY)
-        self.game_button = Button(SCREEN_WIDTH // 2 - 150, 280, 300, 60, "Permainan", BLUE, LIGHT_GRAY)
-        self.quit_button = Button(SCREEN_WIDTH // 2 - 150, 360, 300, 60, "Keluar", RED, LIGHT_GRAY)
-        
-        # Menu edukasi
-        self.color_button = Button(150, 200, 200, 60, "Warna", RED, LIGHT_GRAY)
-        self.number_button = Button(400, 200, 200, 60, "Angka", GREEN, LIGHT_GRAY)
-        self.math_button = Button(650, 200, 200, 60, "Matematika", BLUE, LIGHT_GRAY)
-        self.shape_button = Button(400, 300, 200, 60, "Bentuk", YELLOW, LIGHT_GRAY)
-        self.back_button = Button(20, 20, 100, 40, "Kembali", RED, LIGHT_GRAY)
-        
-        # Game
-        self.reset_button = Button(SCREEN_WIDTH - 120, 20, 100, 40, "Reset", YELLOW, LIGHT_GRAY)
-        self.layout_button = Button(SCREEN_WIDTH - 240, 20, 100, 40, "Ganti Layout", PURPLE, LIGHT_GRAY)
-        
-    def handle_events(self):
+        if is_correct:
+            score += 10
+            level_scores[level-1] += 10
+            feedback = "BENAR!"
+            feedback_timer = 60
+            show_celebration = True
+            celebration_timer = 60
+            pygame.time.wait(300) 
+            
+            # Generate new question
+            if level == 1:
+                current_question = generate_level1_question()
+            elif level == 2:
+                current_question = generate_level2_question()
+                level2_answers = {}  # Reset jawaban untuk pertanyaan baru
+            elif level == 3:
+                current_question = generate_level3_question()
+                selected_letters = []
+            elif level == 4:
+                current_question = generate_level4_question()
+                
+            # Cek apakah level selesai (mencapai skor 200)
+            if level_scores[level-1] >= 200 and level < 4:
+                # Tampilkan dialog konfirmasi
+                show_level_complete_dialog = True
+                feedback_timer = 0  # Reset feedback timer
+        elif level != 2:  # Jangan kurangi nyawa untuk level 2 jika jawaban belum lengkap
+            lives -= 1
+            feedback = "COBA LAGI!"
+            feedback_timer = 40
+            if lives == 0:
+                # Game Over
+                pass
+    
+    running = True
+    while running:
         mouse_pos = pygame.mouse.get_pos()
         
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                self.running = False
-                
-            # Menu state
-            if self.state == "MENU":
-                self.education_button.check_hover(mouse_pos)
-                self.game_button.check_hover(mouse_pos)
-                self.quit_button.check_hover(mouse_pos)
-                
-                if self.education_button.is_clicked(mouse_pos, event):
-                    self.state = "EDUCATION_MENU"
-                elif self.game_button.is_clicked(mouse_pos, event):
-                    self.state = "GAME"
-                    self.mahjong_game = MahjongGame()
-                    self.mahjong_game.create_tiles()
-                elif self.quit_button.is_clicked(mouse_pos, event):
-                    self.running = False
-                    
-            # Education menu state
-            elif self.state == "EDUCATION_MENU":
-                self.color_button.check_hover(mouse_pos)
-                self.number_button.check_hover(mouse_pos)
-                self.math_button.check_hover(mouse_pos)
-                self.shape_button.check_hover(mouse_pos)
-                self.back_button.check_hover(mouse_pos)
-                
-                if self.color_button.is_clicked(mouse_pos, event):
-                    self.state = "COLOR_EDUCATION"
-                elif self.number_button.is_clicked(mouse_pos, event):
-                    self.state = "NUMBER_EDUCATION"
-                elif self.math_button.is_clicked(mouse_pos, event):
-                    self.state = "MATH_EDUCATION"
-                elif self.shape_button.is_clicked(mouse_pos, event):
-                    self.state = "SHAPE_EDUCATION"
-                elif self.back_button.is_clicked(mouse_pos, event):
-                    self.state = "MENU"
-                    
-            # Education states
-            elif self.state in ["COLOR_EDUCATION", "NUMBER_EDUCATION", "MATH_EDUCATION", "SHAPE_EDUCATION"]:
-                self.back_button.check_hover(mouse_pos)
-                
-                if self.back_button.is_clicked(mouse_pos, event):
-                    self.state = "EDUCATION_MENU"
-                    
-            # Game state
-            elif self.state == "GAME":
-                self.back_button.check_hover(mouse_pos)
-                self.reset_button.check_hover(mouse_pos)
-                self.layout_button.check_hover(mouse_pos)
-                
-                if self.back_button.is_clicked(mouse_pos, event):
-                    self.state = "MENU"
-                elif self.reset_button.is_clicked(mouse_pos, event):
-                    self.mahjong_game = MahjongGame()
-                    self.mahjong_game.create_tiles()
-                elif self.layout_button.is_clicked(mouse_pos, event):
-                    self.mahjong_game.layout_type = (self.mahjong_game.layout_type + 1) % 3
-                    self.mahjong_game = MahjongGame()
-                    self.mahjong_game.layout_type = (self.mahjong_game.layout_type + 1) % 3
-                    self.mahjong_game.create_tiles()
-                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                    if not self.mahjong_game.game_complete:
-                        self.mahjong_game.handle_click(mouse_pos)
-                elif event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE and self.mahjong_game.game_complete:
-                    # Pindah ke layout berikutnya
-                    self.mahjong_game.layout_type = (self.mahjong_game.layout_type + 1) % 3
-                    self.mahjong_game = MahjongGame()
-                    self.mahjong_game.layout_type = (self.mahjong_game.layout_type + 1) % 3
-                    self.mahjong_game.create_tiles()
-                    
-    def update(self):
-        # Update komponen edukasi
-        if self.state == "COLOR_EDUCATION":
-            self.color_education.update()
-        elif self.state == "NUMBER_EDUCATION":
-            self.number_education.update()
-        elif self.state == "MATH_EDUCATION":
-            self.math_education.update()
-        elif self.state == "SHAPE_EDUCATION":
-            self.shape_education.update()
+                running = False
             
-        # Update game
-        if self.state == "GAME":
-            self.mahjong_game.update()
-            
-    def draw(self):
-        self.screen.fill(WHITE)
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if game_state == MENU:
+                    # Logic for start menu buttons
+                    if 250 <= mouse_pos[0] <= 550 and 250 <= mouse_pos[1] <= 330:
+                        game_state = EDUCATION_MENU
+                    elif 250 <= mouse_pos[0] <= 550 and 350 <= mouse_pos[1] <= 430:
+                        game_state = LEVEL_SELECT
+                
+                elif game_state == LEVEL_SELECT:
+                    level_buttons, back_btn = draw_level_select_menu(context, mouse_pos, unlocked_levels)
+                    
+                    for i, btn in enumerate(level_buttons):
+                        if btn.is_clicked(mouse_pos) and i < unlocked_levels:
+                            current_level = i + 1
+                            game_state = WORD_GAME
+                            reset_game(current_level)
+                            break
+                    
+                    if back_btn.is_clicked(mouse_pos):
+                        game_state = MENU
+                
+                elif game_state == EDUCATION_MENU:
+                    letter_btn, word_btn, number_btn, back_btn_edu = draw_education_menu(context, mouse_pos)
+                    if letter_btn.is_clicked(mouse_pos):
+                        game_state = LETTER_LEARNING
+                    elif word_btn.is_clicked(mouse_pos):
+                        game_state = WORD_LEARNING
+                    elif number_btn.is_clicked(mouse_pos):
+                        game_state = NUMBER_LEARNING
+                    elif back_btn_edu.is_clicked(mouse_pos):
+                        game_state = MENU
+                        
+                elif game_state == LETTER_LEARNING:
+                    prev_btn, next_btn, back_btn_learn = draw_letter_learning(context, mouse_pos, current_letter_index)
+                    if prev_btn.is_clicked(mouse_pos):
+                        current_letter_index = (current_letter_index - 1) % 26
+                    elif next_btn.is_clicked(mouse_pos):
+                        current_letter_index = (current_letter_index + 1) % 26
+                    elif back_btn_learn.is_clicked(mouse_pos):
+                        game_state = EDUCATION_MENU
+                        
+                elif game_state == WORD_LEARNING:
+                    prev_btn, next_btn, back_btn_learn = draw_word_learning(context, mouse_pos, current_word_index)
+                    if prev_btn.is_clicked(mouse_pos):
+                        current_word_index = (current_word_index - 1) % len(WORD_DATABASE)
+                    elif next_btn.is_clicked(mouse_pos):
+                        current_word_index = (current_word_index + 1) % len(WORD_DATABASE)
+                    elif back_btn_learn.is_clicked(mouse_pos):
+                        game_state = EDUCATION_MENU
+                elif game_state == WORD_GAME and lives > 0:
+                    if back_btn_game.is_clicked(mouse_pos):
+                        game_state = LEVEL_SELECT
+                    if current_level == 1:
+                        # Level 1: Melengkapi 1 huruf rumpang
+                        for btn in buttons:
+                            if btn.is_clicked(mouse_pos):
+                                handle_answer_click(btn.text, 1)
+                                break
+                    elif current_level == 2:
+                        # Level 2: Melengkapi 2-3 huruf rumpang
+                        for i, btn_group in enumerate(buttons):
+                            for btn in btn_group:
+                                if btn.is_clicked(mouse_pos):
+                                    # Kirim posisi index bersama dengan jawaban
+                                    handle_answer_click(btn.text, 2, i)
+                                    break
+                    elif current_level == 3:
+                        # Level 3: Menyusun kata dari huruf-huruf
+                        for btn in letter_buttons:
+                            if btn.is_clicked(mouse_pos) and btn.text not in selected_letters:
+                                selected_letters.append(btn.text)
+                                if len(selected_letters) == len(current_question[0]):
+                                    handle_answer_click('', 3)
+                                break
+                    elif current_level == 4:
+                        # Level 4: Mencocokkan kata dengan gambar
+                        for btn in buttons:
+                            if btn.is_clicked(mouse_pos):
+                                handle_answer_click(btn.text, 4)
+                                break
+                
+                elif game_state == WORD_GAME and lives > 0:
+                    # Game Over screen click to menu
+                    game_state = LEVEL_SELECT
+                
+                # Handle dialog buttons
+                if show_level_complete_dialog:
+                    for btn in dialog_buttons:
+                        if btn.is_clicked(mouse_pos):
+                            if btn.text == "YA":
+                                # Buka level berikutnya
+                                unlocked_levels = current_level + 1
+                                current_level += 1
+                                reset_game(current_level)
+                                feedback = f"SELAMAT DATANG DI LEVEL {current_level}!"
+                                feedback_timer = 120
+                            else:  # TIDAK
+                                # Tetap di level yang sama
+                                reset_game(current_level)
+                                feedback = f"ANDA TETAP DI LEVEL {current_level}"
+                                feedback_timer = 120
+                            
+                            show_level_complete_dialog = False
+                            break
+
+        draw_background(context)
         
-        # Menu state
-        if self.state == "MENU":
-            self.draw_menu()
+        if game_state == MENU:
+            # Main Menu Drawing
+            context.set_source_rgba(1, 1, 1, 0.95)
+            context.rectangle(140, 130, 520, 370) 
+            context.fill()
             
-        # Education menu state
-        elif self.state == "EDUCATION_MENU":
-            self.draw_education_menu()
+            context.set_source_rgb(0.5, 0.2, 0.8)
+            context.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
+            context.set_font_size(30)
+            text = "KUIS KATA"
+            extents = context.text_extents(text)
+            context.move_to((WIDTH - extents[2]) / 2, 220)
+            context.show_text(text)
             
-        # Education states
-        elif self.state == "COLOR_EDUCATION":
-            self.color_education.draw(self.screen)
-            self.back_button.draw(self.screen)
-        elif self.state == "NUMBER_EDUCATION":
-            self.number_education.draw(self.screen)
-            self.back_button.draw(self.screen)
-        elif self.state == "MATH_EDUCATION":
-            self.math_education.draw(self.screen)
-            self.back_button.draw(self.screen)
-        elif self.state == "SHAPE_EDUCATION":
-            self.shape_education.draw(self.screen)
-            self.back_button.draw(self.screen)
+            context.set_font_size(25)
+            text2 = "Belajar Huruf & Kata"
+            extents = context.text_extents(text2)
+            context.move_to((WIDTH - extents[2]) / 2, 260)
+            context.show_text(text2)
+            context.stroke()
             
-        # Game state
-        elif self.state == "GAME":
-            self.draw_game()
+            # Buttons
+            edu_btn = Button(250, 280, 300, 50, "BELAJAR", (0.2, 0.6, 0.8), 30)
+            word_game_btn = Button(250, 350, 300, 50, "KUIS KATA", (0.2, 0.8, 0.4), 30)
             
+            edu_btn.update_hover(mouse_pos)
+            word_game_btn.update_hover(mouse_pos)
+
+            edu_btn.draw(context)
+            word_game_btn.draw(context)
+
+        elif game_state == LEVEL_SELECT:
+            draw_level_select_menu(context, mouse_pos, unlocked_levels)
+            
+        elif game_state == EDUCATION_MENU:
+            draw_education_menu(context, mouse_pos)
+            
+        elif game_state == LETTER_LEARNING:
+            draw_letter_learning(context, mouse_pos, current_letter_index)
+
+        elif game_state == WORD_LEARNING:
+            draw_word_learning(context, mouse_pos, current_word_index)
+
+        elif game_state == WORD_GAME and lives > 0:
+            # Game Kuis Kata berdasarkan level
+            
+            # Question Background
+            context.set_source_rgba(1, 1, 1, 0.95)
+            context.arc(WIDTH//2, 230, 350, 0, 2 * 3.14)
+            context.fill()
+            
+            # Score and Lives
+            back_btn_game.update_hover(mouse_pos)
+            back_btn_game.draw(context)
+            
+            context.set_source_rgb(1, 1, 1)
+            context.rectangle(20, 70, 150, 60)
+            context.fill()
+            draw_star(context, 50, 100, 15)
+            context.set_source_rgb(0.5, 0.2, 0.8)
+            context.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
+            context.set_font_size(30)
+            context.move_to(80, 105)
+            context.show_text(str(score))
+            context.stroke()
+            
+            # Level indicator
+            context.set_source_rgb(1, 1, 1)
+            context.rectangle(WIDTH - 170, 70, 150, 60)
+            context.fill()
+            context.set_source_rgb(0.5, 0.2, 0.8)
+            context.set_font_size(30)
+            context.move_to(WIDTH - 120, 105)
+            context.show_text(f"Level {current_level}")
+            context.stroke()
+            
+            # Progress to next level
+            context.set_source_rgb(1, 1, 1)
+            context.set_font_size(20)
+            progress_text = f"Skor Level: {level_scores[current_level-1]}/200"
+            extents = context.text_extents(progress_text)
+            context.move_to(WIDTH - extents[2] - 20, 140)
+            context.show_text(progress_text)
+            context.stroke()
+            
+            for i in range(3):
+                draw_heart(context, WIDTH - 100 + i * 35, 40, i < lives)
+                
+            # Draw Question Content based on current level
+            buttons = []
+            
+            if current_level == 1:
+                word, hint, draw_func, missing_index, correct_letter, options, _ = current_question
+                draw_func(context, WIDTH // 2, 170, 2.0)
+                
+                context.set_source_rgb(0.2, 0.5, 0.8)
+                context.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
+                context.set_font_size(20)
+                extents = context.text_extents(hint)
+                context.move_to((WIDTH - extents[2]) / 2, 250)
+                context.show_text(hint)
+                context.stroke()
+                
+                # Display word with missing letter
+                display_word = ""
+                for i, letter in enumerate(word):
+                    display_word += ("_" if i == missing_index else letter) + " "
+                
+                context.set_source_rgb(0.3, 0.1, 0.6)
+                context.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
+                context.set_font_size(60)
+                extents = context.text_extents(display_word)
+                context.move_to((WIDTH - extents[2]) / 2, 330)
+                context.show_text(display_word)
+                context.stroke()
+                
+                # Create buttons for options
+                start_x = (WIDTH - (3 * button_width + 2 * button_spacing)) // 2
+                buttons = [Button(start_x + i * (button_width + button_spacing), 400, 
+                                button_width, button_height, options[i], colors[i]) for i in range(3)]
+                
+                # Instruction and Buttons
+                context.set_source_rgb(0.4, 0.4, 0.4)
+                context.set_font_size(24)
+                instruction = "Klik huruf yang tepat!"
+                extents = context.text_extents(instruction)
+                context.move_to((WIDTH - extents[2]) / 2, 380)
+                context.show_text(instruction)
+                context.stroke()
+                
+                for btn in buttons:
+                    btn.update_hover(mouse_pos)
+                    btn.draw(context)
+            
+            elif current_level == 2:
+                word, hint, draw_func, missing_indices, correct_letters, all_options, _ = current_question
+                draw_func(context, WIDTH // 2, 170, 2.0)
+                
+                context.set_source_rgb(0.2, 0.5, 0.8)
+                context.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
+                context.set_font_size(20)
+                extents = context.text_extents(hint)
+                context.move_to((WIDTH - extents[2]) / 2, 250)
+                context.show_text(hint)
+                context.stroke()
+                
+                # Display word with missing letters
+                display_word = ""
+                for i, letter in enumerate(word):
+                    # Tampilkan huruf yang sudah dijawab dengan benar
+                    if i in missing_indices and i in level2_answers:
+                        display_word += level2_answers[i] + " "
+                    elif i in missing_indices:
+                        display_word += "_ "
+                    else:
+                        display_word += letter + " "
+                
+                context.set_source_rgb(0.3, 0.1, 0.6)
+                context.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
+                context.set_font_size(60)
+                extents = context.text_extents(display_word)
+                context.move_to((WIDTH - extents[2]) / 2, 330)
+                context.show_text(display_word)
+                context.stroke()
+                
+                # Create buttons for each missing letter position
+                buttons = []
+                for i, options in enumerate(all_options):
+                    y_pos = 400 + i * 60
+                    btn_group = []
+                    start_x = (WIDTH - (3 * button_width + 2 * button_spacing)) // 2
+                    
+                    # Tampilkan indikator untuk jawaban yang sudah dipilih
+                    if i in level2_answers:
+                        context.set_source_rgb(0.2, 0.8, 0.3)
+                        context.set_font_size(20)
+                        context.move_to(start_x - 50, y_pos + 30)
+                        context.show_text("✓")
+                        context.stroke()
+                    
+                    for j, option in enumerate(options):
+                        # Nonaktifkan tombol jika jawaban untuk posisi ini sudah dipilih
+                        if i in level2_answers:
+                            color = (0.5, 0.5, 0.5)
+                        else:
+                            color = colors[j]
+                        
+                        btn = Button(start_x + j * (button_width + button_spacing), y_pos, 
+                                    button_width, button_height, option, color)
+                        btn.update_hover(mouse_pos)
+                        btn.draw(context)
+                        btn_group.append(btn)
+                    
+                    buttons.append(btn_group)
+                
+                # Instruction
+                context.set_source_rgb(0.4, 0.4, 0.4)
+                context.set_font_size(24)
+                instruction = "Klik huruf yang tepat untuk setiap posisi!"
+                extents = context.text_extents(instruction)
+                context.move_to((WIDTH - extents[2]) / 2, 380)
+                context.show_text(instruction)
+                context.stroke()
+                
+                # Progress indicator
+                context.set_source_rgb(0.2, 0.5, 0.8)
+                context.set_font_size(18)
+                progress_text = f"Progress: {len(level2_answers)}/{len(correct_letters)} huruf"
+                extents = context.text_extents(progress_text)
+                context.move_to((WIDTH - extents[2]) / 2, 360)
+                context.show_text(progress_text)
+                context.stroke()
+            
+            elif current_level == 3:
+                word, hint, draw_func, letters, _ = current_question
+                draw_func(context, WIDTH // 2, 170, 2.0)
+                
+                context.set_source_rgb(0.2, 0.5, 0.8)
+                context.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
+                context.set_font_size(20)
+                extents = context.text_extents(hint)
+                context.move_to((WIDTH - extents[2]) / 2, 250)
+                context.show_text(hint)
+                context.stroke()
+                
+                # Display selected letters
+                context.set_source_rgb(0.3, 0.1, 0.6)
+                context.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
+                context.set_font_size(60)
+                
+                word_width = len(word) * 40
+                x_pos = WIDTH//2 - word_width // 2 + 20
+                for i in range(len(word)):
+                    if i < len(selected_letters):
+                        context.move_to(x_pos + i * 40 - 15, 340)
+                        context.show_text(selected_letters[i])
+                    else:
+                        context.rectangle(x_pos + i * 40 - 15, 310, 30, 40)
+                        context.stroke()
+                
+                # Create buttons for letters
+                letter_buttons = []
+                letters_per_row = 6
+                for i, letter in enumerate(letters):
+                    row = i // letters_per_row
+                    col = i % letters_per_row
+                    x = 200 + col * 70
+                    y = 400 + row * 60
+                    
+                    # Disable button if letter already selected
+                    if letter in selected_letters:
+                        color = (0.5, 0.5, 0.5)
+                    else:
+                        color = (0.2, 0.6, 0.9)
+                    
+                    btn = Button(x, y, 60, 50, letter, color, 30)
+                    btn.update_hover(mouse_pos)
+                    btn.draw(context)
+                    letter_buttons.append(btn)
+                
+                # Reset button
+                reset_btn = Button(350, 500, 100, 40, "RESET", (0.9, 0.5, 0.2), 20)
+                reset_btn.update_hover(mouse_pos)
+                reset_btn.draw(context)
+                
+                if reset_btn.is_clicked(mouse_pos):
+                    selected_letters = []
+                
+                # Instruction
+                context.set_source_rgb(0.4, 0.4, 0.4)
+                context.set_font_size(24)
+                instruction = "Susun huruf-huruf menjadi kata yang tepat!"
+                extents = context.text_extents(instruction)
+                context.move_to((WIDTH - extents[2]) / 2, 380)
+                context.show_text(instruction)
+                context.stroke()
+            
+            elif current_level == 4:
+                correct_word, hint, draw_func, options, _ = current_question
+                
+                context.set_source_rgb(0.2, 0.5, 0.8)
+                context.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
+                context.set_font_size(20)
+                extents = context.text_extents("Pilih kata yang sesuai dengan gambar:")
+                context.move_to((WIDTH - extents[2]) / 2, 100)
+                context.show_text(extents)
+                context.stroke()
+                
+                # Draw the image
+                draw_func(context, WIDTH // 2, 200, 2.0)
+                
+                # Create buttons for options
+                buttons = []
+                for i, option in enumerate(options):
+                    y_pos = 320 + i * 60
+                    btn = Button(250, y_pos, 300, 50, option["word"], (0.2, 0.6, 0.9), 20)
+                    btn.update_hover(mouse_pos)
+                    btn.draw(context)
+                    buttons.append(btn)
+                
+                # Instruction
+                context.set_source_rgb(0.4, 0.4, 0.4)
+                context.set_font_size(24)
+                instruction = "Klik kata yang sesuai dengan gambar!"
+                extents = context.text_extents(instruction)
+                context.move_to((WIDTH - extents[2]) / 2, 290)
+                context.show_text(instruction)
+                context.stroke()
+            
+            # Tambahkan dialog konfirmasi jika level selesai
+            if show_level_complete_dialog:
+                # Draw dialog background
+                context.set_source_rgba(0, 0, 0, 0.8)
+                context.rectangle(150, 200, 500, 200)
+                context.fill()
+                
+                context.set_source_rgb(1, 1, 1)
+                context.set_font_size(30)
+                dialog_text = f"LEVEL {current_level} SELESAI!"
+                extents = context.text_extents(dialog_text)
+                context.move_to((WIDTH - extents[2]) / 2, 240)
+                context.show_text(dialog_text)
+                
+                context.set_font_size(24)
+                question_text = "Lanjut ke level selanjutnya?"
+                extents = context.text_extents(question_text)
+                context.move_to((WIDTH - extents[2]) / 2, 290)
+                context.show_text(question_text)
+                
+                # Create dialog buttons
+                dialog_buttons = [
+                    Button(250, 330, 100, 50, "YA", (0.2, 0.8, 0.4), 24),
+                    Button(450, 330, 100, 50, "TIDAK", (0.9, 0.5, 0.2), 24)
+                ]
+                
+                for btn in dialog_buttons:
+                    btn.update_hover(mouse_pos)
+                    btn.draw(context)
+            
+            # Feedback
+            if feedback_timer > 0:
+                if feedback == "BENAR!":
+                    context.set_source_rgb(0.2, 0.8, 0.3)
+                else:
+                    context.set_source_rgb(0.9, 0.5, 0.2)
+                context.set_font_size(50)
+                extents = context.text_extents(feedback)
+                context.move_to((WIDTH - extents[2]) / 2, HEIGHT - 50)
+                context.show_text(feedback)
+                context.stroke()
+                feedback_timer -= 1
+            
+            # Celebration
+            if show_celebration and celebration_timer > 0:
+                for _ in range(5):
+                    x = random.randint(100, WIDTH - 100)
+                    y = random.randint(50, 250)
+                    draw_star(context, x, y, random.randint(10, 20))
+                celebration_timer -= 1
+                if celebration_timer == 0:
+                    show_celebration = False
+        
+        elif game_state == WORD_GAME and lives == 0:
+            # Game Over Screen
+            context.set_source_rgba(1, 1, 1, 0.95)
+            context.rectangle(150, 150, 500, 350)
+            context.fill()
+            
+            context.set_source_rgb(0.9, 0.2, 0.2)
+            context.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
+            context.set_font_size(50)
+            text = "GAME SELESAI!"
+            extents = context.text_extents(text)
+            context.move_to((WIDTH - extents[2]) / 2, 250)
+            context.show_text(text)
+            
+            context.set_font_size(40)
+            score_text = f"SKOR AKHIR: {score}"
+            extents = context.text_extents(score_text)
+            context.move_to((WIDTH - extents[2]) / 2, 320)
+            context.show_text(score_text)
+            context.stroke()
+            
+            context.set_source_rgb(0.5, 0.2, 0.8)
+            context.set_font_size(20)
+            text_kembali = "Klik di mana saja untuk kembali ke Menu Level"
+            extents = context.text_extents(text_kembali)
+            context.move_to((WIDTH - extents[2]) / 2, 400)
+            context.show_text(text_kembali)
+            context.stroke()
+            
+        # --- BLIT CAIRO TO PYGAME ---
+        pygame.surfarray.blit_array(screen, data[:, :, [2, 1, 0]].swapaxes(0, 1))
         pygame.display.flip()
-        
-    def draw_menu(self):
-        # Judul
-        title = font_xlarge.render("Game Edukatif Mahjong", True, BLACK)
-        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 100))
-        self.screen.blit(title, title_rect)
-        
-        # Subjudul
-        subtitle = font_large.render("Belajar Warna, Angka, Matematika, dan Bentuk", True, BLACK)
-        subtitle_rect = subtitle.get_rect(center=(SCREEN_WIDTH // 2, 150))
-        self.screen.blit(subtitle, subtitle_rect)
-        
-        # Tombol
-        self.education_button.draw(self.screen)
-        self.game_button.draw(self.screen)
-        self.quit_button.draw(self.screen)
-        
-    def draw_education_menu(self):
-        # Judul
-        title = font_xlarge.render("Pilih Materi Edukasi", True, BLACK)
-        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 100))
-        self.screen.blit(title, title_rect)
-        
-        # Tombol
-        self.color_button.draw(self.screen)
-        self.number_button.draw(self.screen)
-        self.math_button.draw(self.screen)
-        self.shape_button.draw(self.screen)
-        self.back_button.draw(self.screen)
-        
-    def draw_game(self):
-        # Judul
-        title = font_large.render("Game Mahjong: Cocokkan Gambar dengan Kata", True, BLACK)
-        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 30))
-        self.screen.blit(title, title_rect)
-        
-        # Gambar game
-        self.mahjong_game.draw(self.screen)
-        
-        # Tombol
-        self.back_button.draw(self.screen)
-        self.reset_button.draw(self.screen)
-        self.layout_button.draw(self.screen)
-        
-    def run(self):
-        while self.running:
-            self.handle_events()
-            self.update()
-            self.draw()
-            self.clock.tick(FPS)
-            
-        pygame.quit()
-        sys.exit()
+        clock.tick(FPS)
+    
+    pygame.quit()
 
 if __name__ == "__main__":
-    game = Game()
-    game.run()
+    main()
