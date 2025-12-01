@@ -15,7 +15,7 @@ WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 BLUE = (100, 180, 255)
 GREEN = (100, 220, 120)
-YELLOW = (255, 220, 80)
+YELLOW = (255, 220, 150)
 ORANGE = (255, 160, 80)
 RED = (255, 120, 120)
 PURPLE = (200, 150, 255)
@@ -37,6 +37,7 @@ try:
     font_m = pygame.font.SysFont("segoe ui emoji", 30)
     font_s = pygame.font.SysFont("segoe ui emoji", 30)
     font_xs = pygame.font.SysFont("segoe ui emoji", 20)
+    font_gambar = pygame.font.SysFont("segoe ui emoji", 125)
 except:
     # Jika tidak tersedia, gunakan font default
     font_xl = pygame.font.Font(None, 80)
@@ -44,48 +45,49 @@ except:
     font_m = pygame.font.Font(None, 45)
     font_s = pygame.font.Font(None, 35)
     font_xs = pygame.font.Font(None, 20)
+    font_gambar = pygame.font.Font(None, 125)
 
 # Data Kata dari KBBI untuk anak TK dengan emoji
 KATA = {
     'mudah': [
-        ('BOLA', '⚽ Mainan bulat ditendang'),
-        ('KUCING', '🐱 Hewan berbulu suka ikan'),
-        ('APEL', '🍎 Buah merah atau hijau'),
-        ('BUKU', '📚 Untuk membaca cerita'),
-        ('MEJA', '🪑 Tempat menulis'),
-        ('SAPI', '🐄 Hewan besar beri susu'),
-        ('NASI', '🍚 Makanan dari beras'),
-        ('MATA', '👀 Untuk melihat'),
-        ('TOPI', '🧢 Penutup kepala'),
-        ('KAKI', '🦶 Untuk berjalan'),
+        ('BOLA', '⚽'),
+        ('KUCING', '🐱'),
+        ('APEL', '🍎'),
+        ('BUKU', '📚'),
+        ('MEJA', '🪑'),
+        ('SAPI', '🐄'),
+        ('NASI', '🍚'),
+        ('MATA', '👀'),
+        ('TOPI', '🧢'),
+        ('KAKI', '🦶'),
     ],
     'sedang': [
-        ('RUMAH', '🏠 Tempat tinggal'),
-        ('AYAM', '🐔 Hewan berkokok'),
-        ('JERUK', '🍊 Buah bulat oranye'),
-        ('PENSIL', '✏️ Alat tulis dari kayu'),
-        ('GAJAH', '🐘 Hewan punya belalai'),
-        ('MOBIL', '🚗 Kendaraan roda empat'),
-        ('PISANG', '🍌 Buah kuning panjang'),
-        ('BURUNG', '🐦 Hewan bisa terbang'),
-        ('JAGUNG', '🌽 Tanaman bulir kuning'),
-        ('RANTAI', '⛓️ Pengikat dari logam'),
-        ('ANGGUR', '🍇 Buah kecil bergerombol'),
-        ('KURSI', '🪑 Tempat duduk'),
+        ('RUMAH', '🏠'),
+        ('AYAM', '🐔'),
+        ('JERUK', '🍊'),
+        ('PENSIL', '✏️'),
+        ('GAJAH', '🐘'),
+        ('MOBIL', '🚗'),
+        ('PISANG', '🍌'),
+        ('BURUNG', '🐦'),
+        ('JAGUNG', '🌽'),
+        ('RANTAI', '⛓️'),
+        ('ANGGUR', '🍇'),
+        ('KURSI', '🪑'),
     ],
     'sulit': [
-        ('KELINCI', '🐰 Hewan melompat telinga panjang'),
-        ('SEMANGKA', '🍉 Buah besar hijau merah'),
-        ('SEPEDA', '🚲 Kendaraan roda dua'),
-        ('JERAPAH', '🦒 Hewan leher panjang'),
-        ('TELEVISI', '📺 Alat untuk menonton'),
-        ('PAYUNG', '☂️ Pelindung dari hujan'),
-        ('PESAWAT', '✈️ Kendaraan terbang'),
-        ('KANGURU', '🦘 Hewan punya kantong'),
-        ('KOMPUTER', '💻 Alat elektronik untuk bekerja'),
-        ('DINOSAURUS', '🦕 Hewan purba besar'),
-        ('HELICOPTER', '🚁 Kendaraan terbang baling-baling'),
-        ('STRAWBERRY', '🍓 Buah merah berbintik'),
+        ('KELINCI', '🐰'),
+        ('SEMANGKA', '🍉'),
+        ('SEPEDA', '🚲'),
+        ('JERAPAH', '🦒'),
+        ('TELEVISI', '📺'),
+        ('PAYUNG', '☂️'),
+        ('PESAWAT', '✈️'),
+        ('KANGURU', '🦘'),
+        ('KOMPUTER', '💻'),
+        ('DINOSAURUS', '🦕'),
+        ('HELICOPTER', '🚁'),
+        ('STRAWBERRY', '🍓'),
     ]
 }
 
@@ -93,8 +95,8 @@ KATA = {
 player = {'nama': '', 'xp': 0, 'benar': 0}
 
 # Pesan motivasi dengan emoji
-PUJIAN = ["Keren! 🌟", "Wow! 🎉", "Bagus! 👍", "Hebat! 💪", "Pintar! 🧠", "Mantap! 🔥", "Luar Biasa! ✨", "Top! 👑", "Jago! 🏆", "Bravo! 👏"]
-SEMANGAT = ["Coba Lagi! 😊", "Pasti Bisa! 💪", "Jangan Menyerah! 🌈", "Yuk Semangat! ⚡", "Ayo Lagi! 🔄"]
+PUJIAN = ["Keren!🌟", "Wow!🎉", "Bagus!👍", "Hebat!💪", "Pintar!🧠", "Mantap!🔥", "Luar Biasa!✨", "Top!👑", "Jago!🏆", "Bravo!👏"]
+SEMANGAT = ["Coba Lagi!😊", "Pasti Bisa!💪", "Jangan Menyerah!🌈", "Yuk Semangat!⚡", "Ayo Lagi!🔄"]
 
 def gradient(surf, c1, c2):
     """Gambar gradient background"""
@@ -328,7 +330,7 @@ def main():
                 
                 kata_surf = font_l.render(kata_sekarang, True, WHITE)
                 kata_box = pygame.Rect(WIDTH//2 - kata_surf.get_width()//2 - 30, 385, 
-                                      kata_surf.get_width() + 60, 70)
+                                      kata_surf.get_width() + 60, 60)
                 rounded_rect(screen, PURPLE, kata_box, 15)
                 screen.blit(kata_surf, (WIDTH//2 - kata_surf.get_width()//2, 400))
                 
@@ -377,19 +379,19 @@ def main():
                 xp_txt = font_m.render(f"XP: {player['xp']} ⭐", True, YELLOW)
                 screen.blit(xp_txt, (WIDTH - 200, 55))
                 
-                petunjuk_box = pygame.Rect(150, 140, WIDTH - 300, 100)
+                petunjuk_box = pygame.Rect(400, 140, WIDTH - 800, 200)
                 rounded_rect(screen, YELLOW, petunjuk_box, 20)
                 pygame.draw.rect(screen, ORANGE, petunjuk_box, 4, border_radius=20)
                 
-                petunjuk_txt = font_m.render(petunjuk, True, BLACK)
-                screen.blit(petunjuk_txt, (WIDTH//2 - petunjuk_txt.get_width()//2, 175))
+                petunjuk_txt = font_gambar.render(petunjuk, True, BLACK)
+                screen.blit(petunjuk_txt, (WIDTH//2 - petunjuk_txt.get_width()//2, 180))
                 
                 box_w = 70
                 box_h = 80
                 spacing = 10
                 total_w = len(kata_sekarang) * (box_w + spacing) - spacing
                 start_x = WIDTH//2 - total_w//2
-                start_y = 300
+                start_y = 350
                 
                 input_idx = 0
                 for i, huruf in enumerate(kata_sekarang):
@@ -417,12 +419,12 @@ def main():
                     screen.blit(huruf_surf, (box.centerx - huruf_surf.get_width()//2, 
                                             box.centery - huruf_surf.get_height()//2))
                 
-                input_box = pygame.Rect(WIDTH//2 - 200, 440, 400, 60)
+                input_box = pygame.Rect(WIDTH//2 - 200, 505, 400, 60)
                 rounded_rect(screen, WHITE, input_box, 15)
                 pygame.draw.rect(screen, BLUE, input_box, 3, border_radius=15)
                 
                 label = font_s.render("Huruf yang hilang:", True, BLACK)
-                screen.blit(label, (WIDTH//2 - label.get_width()//2, 405))
+                screen.blit(label, (WIDTH//2 - label.get_width()//2, 450))
                 
                 input_txt = font_l.render(input_user, True, BLACK)
                 screen.blit(input_txt, (input_box.centerx - input_txt.get_width()//2, 
@@ -430,7 +432,7 @@ def main():
                 
                 if pesan:
                     pesan_surf = font_l.render(pesan, True, warna_pesan)
-                    screen.blit(pesan_surf, (WIDTH//2 - pesan_surf.get_width()//2, 540))
+                    screen.blit(pesan_surf, (WIDTH//2 - pesan_surf.get_width()//2, 520))
                 
                 btn_cek = pygame.Rect(WIDTH//2 - 230, 640, 200, 60)
                 hover_cek = btn_cek.collidepoint(mouse_pos)
